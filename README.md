@@ -171,6 +171,8 @@ bun run simular   # grava resultados/resultados.json e .js (usado pelos slides)
 bun test          # 15 testes
 ```
 
+📖 **Roteiro e guia de estudo de cada slide** (incluindo o passo a passo do painel de debug): [GUIA_APRESENTACAO.md](GUIA_APRESENTACAO.md)
+
 ## 🚀 Como Executar Localmente
 
 ### 1. Pré-requisitos
