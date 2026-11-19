@@ -1,0 +1,16 @@
+{
+  "name": "metricas-estimativas-software-monte-carlo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "simular": "bun run src/estudo.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "vendor": "mkdir -p vendor && cp node_modules/motion/dist/motion.js vendor/motion.js"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "motion": "^14.14.0",
+    "typescript": "^7.0.2"
+  }
+}
