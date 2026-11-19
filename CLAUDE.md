@@ -18,9 +18,7 @@ O script possui cabeçalho PEP 723 (gerencia automaticamente `numpy` e `matplotl
 # Executa a simulação de 10.000 iterações e regenera os 4 gráficos PNG em img/
 uv run simulacao_monte_carlo.py
 
-# Roda a suíte de testes unitários estocásticos
-uv run python -m pytest simulacao_monte_carlo.py -v
-# ou diretamente via flag interna:
+# Roda a suíte completa de 7 testes unitários (incluindo testes de equivalência com rodbv/quando e thawkin3)
 uv run python simulacao_monte_carlo.py --test
 ```
 
@@ -134,7 +132,8 @@ Se for refinar o texto ou os slides, mantenha a coerência técnica:
 │   ├── fig1_fisica_area_monte_carlo.png         # Método de rejeição (área/pi) e erro O(1/√N)
 │   ├── fig2_throughput_historico.png            # Histograma do throughput histórico
 │   ├── fig3_monte_carlo_prazos_histograma.png   # Histograma de probabilidades P50/P85/P95
-│   └── fig4_curva_s_cdf_risco.png               # Curva S cumulativa (Escopo Fixo vs Dinâmico)
+│   ├── fig4_curva_s_cdf_risco.png               # Curva S cumulativa (Escopo Fixo vs Dinâmico)
+│   └── fig5_monte_carlo_trajetorias_convergencia.png # 80 trajetórias de burn-down, cone de incerteza P15-P85 e convergência assintótica
 ├── assets/                                      # Avatares chibi em giz de cera
 ├── fonts/                                       # Fontes TTF locais (Itim e Gaegu)
 └── design_system/                               # Tokens CSS/JSON do Fábio
