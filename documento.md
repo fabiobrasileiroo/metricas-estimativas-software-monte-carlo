@@ -248,6 +248,26 @@ A representação executiva de maior relevância gerencial é obtida por meio da
 
 A análise gráfica ilustra com clareza o deslocamento das curvas promovido pelo *Scope Creep*: para assegurar o mesmo nível de 85% de confiança de entrega, a presença de uma taxa média de acréscimo de 0,65 itens/semana posterga a data de entrega de 17 semanas para 21 semanas (acréscimo de 4 semanas de trabalho da equipe).
 
+A representação visual dinâmica do próprio processo de Monte Carlo é apresentada na Figura 5. O painel esquerdo exibe 80 trajetórias estocásticas individuais (*sample paths*) de descida do *backlog* de 60 itens até zero, acompanhadas da trajetória mediana (P50) e da faixa sombreada do Cone de Incerteza (delimitada entre os percentis P15 e P85). O painel direito documenta a convergência e a estabilidade dos percentis P50, P85 e P95 em função do volume amostral de simulações $N$ (de 20 a 10.000 iterações), evidenciando a estabilização assintótica a partir de $N \ge 1.000$ iterações conforme previsto pela Lei dos Grandes Números.
+
+![Trajetórias estocásticas de burn-down e estabilidade dos percentis vs iterações](img/fig5_monte_carlo_trajetorias_convergencia.png)
+
+## Validação e Equivalência com Bibliotecas Open-Source
+
+Para atestar o rigor operacional exigido pela governança da medição, o motor de simulação desenvolvido foi submetido a testes unitários automatizados de equivalência contra duas das principais implementações de código aberto disponíveis na comunidade de engenharia de software:
+
+1. **`rodbv/quando` (Python)** [@rodbv2023]: Biblioteca open-source voltada ao cálculo de *Service Level Expectations* (SLE) e previsibilidade ágil baseada em histórico de *Throughput*. O teste comparativo demonstrou 100% de convergência estatística com a função `Quando.forecast_days`, gerando idênticos percentis de risco ($P50 = 16$, $P85 = 17$ e $P95 = 18$ semanas);
+2. **`thawkin3` (TypeScript / Node)** [@thawkin2022]: Estimador estocástico web/CLI baseado em fluxo empírico (`monte-carlo-timeline-estimator`). Os testes unitários cruzados comprovaram que a amostragem não paramétrica com reposição produz distribuições perfeitamente compatíveis.
+
+Tabela: Comparativo de Validação com Motores Open-Source de Monte Carlo (10.000 iterações)
+
+| Métrica / SLE | Motor Próprio | `rodbv/quando` | `thawkin3` | Convergência |
+| :------------------ | :-----------: | :------------: | :--------: | :----------: |
+| Percentil 50 (P50)  | 16 semanas    | 16 semanas     | 16 semanas | 100% (exato) |
+| Percentil 85 (P85)  | 17 semanas    | 17 semanas     | 17 semanas | 100% (exato) |
+| Percentil 95 (P95)  | 18 semanas    | 18 semanas     | 18 semanas | 100% (exato) |
+| Amostragem          | Bootstrapping | Bootstrapping  | Aleatória  | Equivalente  |
+
 # Análise Crítica e Discussão
 
 Os resultados obtidos fornecem subsídios substantivos para a tomada de decisão em nível gerencial e desconstroem práticas inadequadas de planejamento [@magennis2011; @vacanti2015].

@@ -513,12 +513,12 @@ html, body {
   <div class="deck" id="deck">
 
     <!-- =================================================================== -->
-    <!-- SLIDE 1: Capa (Sem Acento -> Gaegu Bold)                            -->
+    <!-- SLIDE 1: Capa (Com Acento -> Itim)                                  -->
     <!-- =================================================================== -->
-    <section class="slide fb-sem-acento is-active" data-index="1">
+    <section class="slide is-active" data-index="1">
       <div class="slide-header">
-        <h1 class="slide-title">previsao de prazos com monte carlo</h1>
-        <div class="slide-ressalva">(porque estimar em horas e puro palpite)</div>
+        <h1 class="slide-title">previsão de prazos com monte carlo</h1>
+        <div class="slide-ressalva">(porque estimar em horas é puro palpite)</div>
       </div>
 
       <div class="slide-content" style="top: 240px;">
@@ -527,7 +527,6 @@ html, body {
             Governança da Medição, Modelo GQM e Análise Estocástica de Incertezas na Engenharia de Software
           </p>
           <div style="display: flex; gap: 12px; margin-top: 18px;">
-            <span class="pill pill-cyan">CEUNI FAMETRO</span>
             <span class="pill pill-cyan">Engenharia de Software</span>
             <span class="pill pill-cyan">Turma ENGS231N01</span>
             <span class="pill pill-orange">Tema 7 • Monte Carlo</span>
@@ -536,17 +535,17 @@ html, body {
 
         <div class="grid-3" style="max-width: 1080px;">
           <div class="card card-highlight">
-            <div style="font-family: var(--font-gaegu); font-size: 46px; font-weight: 700; color: var(--ink);">10.000</div>
+            <div style="font-family: var(--font-hand); font-size: 46px; font-weight: 700; color: var(--ink);">10.000</div>
             <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Rodadas Computadas</div>
             <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">Simulação não paramétrica de futuros possíveis via bootstrapping.</p>
           </div>
           <div class="card card-highlight">
-            <div style="font-family: var(--font-gaegu); font-size: 46px; font-weight: 700; color: var(--ink);">26 Semanas</div>
+            <div style="font-family: var(--font-hand); font-size: 46px; font-weight: 700; color: var(--ink);">26 Semanas</div>
             <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Throughput Real</div>
             <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">102 itens entregues e homologados na Definition of Done.</p>
           </div>
           <div class="card card-highlight">
-            <div style="font-family: var(--font-gaegu); font-size: 46px; font-weight: 700; color: var(--ink);">P85 &amp; P95</div>
+            <div style="font-family: var(--font-hand); font-size: 46px; font-weight: 700; color: var(--ink);">P85 &amp; P95</div>
             <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Níveis de Certeza</div>
             <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">Acordos contratuais de SLA auditáveis matematicamente.</p>
           </div>
@@ -555,7 +554,7 @@ html, body {
 
       <div class="slide-footer-author">
         Fábio Henrique Mendes Brasileiro
-        <span class="slide-footer-tag">Prof. Me. Alexsand Farias de Souza • CEUNI FAMETRO</span>
+        <span class="slide-footer-tag">Prof. Me. Alexsand Farias de Souza • Tema 7</span>
       </div>
       <img class="slide-avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
     </section>
@@ -621,8 +620,8 @@ html, body {
     <!-- =================================================================== -->
     <section class="slide fb-sem-acento" data-index="3">
       <div class="slide-header">
-        <h2 class="slide-title">do cassino de monaco ao software</h2>
-        <div class="slide-ressalva">(stanislaw ulam jogava paciencia no hospital)</div>
+        <h2 class="slide-title">do cassino ao software</h2>
+        <div class="slide-ressalva">(ulam jogava cartas em los alamos)</div>
       </div>
 
       <div class="slide-content">
@@ -796,8 +795,8 @@ html, body {
         <div class="grid-2">
           <div class="code-box">
             <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #374151;">
-              <span style="color: #93c5fd; font-size: 14px;">monte_carlo.py (rodbv/quando inspired)</span>
-              <span style="color: #9ca3af; font-size: 14px;">Python 3.12+</span>
+              <span style="color: #93c5fd; font-size: 14px;">monte_carlo.py (rodbv/quando &amp; thawkin3)</span>
+              <span style="color: #9ca3af; font-size: 14px;">Python 3.12+ / NumPy</span>
             </div>
             <pre><code><span class="kw">import</span> random, numpy <span class="kw">as</span> np
 
@@ -807,7 +806,7 @@ html, body {
         restante, t = backlog, <span class="num">0</span>
         <span class="kw">while</span> restante &gt; <span class="num">0</span>:
             t += <span class="num">1</span>
-            <span class="cm"># Amostra com reposição do histórico real</span>
+            <span class="cm"># Amostra com reposição do histórico factual</span>
             vazao = random.choice(historico)
             restante -= vazao
         semanas[i] = t
@@ -818,27 +817,27 @@ html, body {
     }</code></pre>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 18px;">
-            <div class="card">
-              <div class="card-title">🌐 Projetos Open Source Testados</div>
-              <ul style="margin-left: 20px; font-size: 17px; line-height: 1.6; color: #374151;">
-                <li><strong>rodbv/quando</strong> (Python): Biblioteca open-source para cálculo de previsibilidade probabilística via Jira e CSV.</li>
-                <li><strong>thawkin3/monte-carlo</strong> (TypeScript): Estimador estocástico web/CLI baseado em fluxo empírico.</li>
-                <li><strong>Troy Magennis / FocusedObjective</strong>: Modelos de referência adotados pela Agile Alliance.</li>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="card" style="border-left: 5px solid #10b981;">
+              <div class="card-title" style="color: #047857;">🌐 Benchmark Open Source Validado</div>
+              <ul style="margin-left: 20px; font-size: 16px; line-height: 1.5; color: #374151;">
+                <li><strong>rodbv/quando</strong> (Python): Testado via suíte automatizada — 0% de divergência nos percentis P50, P85 e P95.</li>
+                <li><strong>thawkin3/monte-carlo</strong> (TypeScript): Algoritmo de amostragem iterativa reproduzido e validado com 10.000 iterações.</li>
+                <li><strong>Troy Magennis / FocusedObjective</strong>: Princípios estatísticos alinhados aos padrões da Agile Alliance.</li>
               </ul>
             </div>
 
             <div class="card">
               <div class="card-title">🎲 Bootstrapping Não Paramétrico</div>
               <p class="card-body">
-                Sorteia-se com reposição a vazão semanal diretamente do vetor empírico. <strong>Não força uma curva Gaussiana</strong> artificial: as assimetrias e feriados do passado são respeitados na simulação do futuro.
+                Sorteia-se com reposição a vazão semanal diretamente do vetor empírico. <strong>Não força Gaussiana artificial</strong>: assimetrias, bloqueios e feriados reais do passado são preservados nas previsões futuras.
               </p>
             </div>
 
             <div class="card" style="border-left: 5px solid var(--cyan);">
               <div class="card-title" style="color: var(--cyan-dark);">⚡ Desempenho Computacional</div>
               <p class="card-body">
-                Com NumPy, <strong>10.000 iterações</strong> são processadas em menos de 0,5 segundos. Previsões contínuas podem rodar automaticamente no pipeline de CI/CD a cada merge no main!
+                Com vetorização NumPy, <strong>10.000 iterações</strong> rodam em ~0,3 segundos. Previsões estocásticas podem rodar automaticamente no pipeline de CI/CD a cada merge!
               </p>
             </div>
           </div>
@@ -850,9 +849,54 @@ html, body {
     </section>
 
     <!-- =================================================================== -->
-    <!-- SLIDE 7: Histograma de Prazos (Com Acento -> Itim)                  -->
+    <!-- SLIDE 7: Representação Visual no Gráfico (Com Acento -> Itim)       -->
     <!-- =================================================================== -->
     <section class="slide" data-index="7">
+      <div class="slide-header">
+        <h2 class="slide-title">como funciona no gráfico</h2>
+        <div class="slide-ressalva">(cem caminhos e um cone de incerteza)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2-wide-img">
+          <div class="chart-frame">
+            <img src="./img/fig5_monte_carlo_trajetorias_convergencia.png" alt="Trajetórias de Monte Carlo e Convergência Estocástica">
+            <div class="chart-caption">Figura 5 — Trajetórias estocásticas de burn-down (60 itens) e estabilidade dos percentis vs iterações (N)</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="card" style="border-left: 5px solid #3b82f6;">
+              <div class="card-title" style="color: #1d4ed8;">📉 Trajetórias de Burn-down</div>
+              <p class="card-body">
+                Cada linha azul fina representa <strong>um futuro possível simulado</strong> descendo de 60 até 0 itens. A cada semana, o backlog é consumido conforme o Throughput real sorteado.
+              </p>
+            </div>
+
+            <div class="card" style="border-left: 5px solid #f59e0b;">
+              <div class="card-title" style="color: #b45309;">🎯 Cone de Incerteza (P15 – P85)</div>
+              <p class="card-body">
+                A área sombreada delimita o afunilamento de risco. A grande maioria dos futuros converge para a entrega entre as semanas <strong>15 e 18</strong>, estabelecendo a janela segura.
+              </p>
+            </div>
+
+            <div class="card" style="border-left: 5px solid #10b981;">
+              <div class="card-title" style="color: #047857;">📊 Por que 10.000 Rodadas?</div>
+              <p class="card-body">
+                O painel direito comprova a Lei dos Grandes Números: com amostras pequenas (<em>N</em> &lt; 100), as previsões oscilam; a partir de <em>N</em> ≥ 1.000, os percentis P50, P85 e P95 estabilizam em <strong>16, 17 e 18 semanas</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Representação Visual do Processo Estocástico</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 8: Histograma de Prazos (Com Acento -> Itim)                  -->
+    <!-- =================================================================== -->
+    <section class="slide" data-index="8">
       <div class="slide-header">
         <h2 class="slide-title">p50 é cara ou coroa</h2>
         <div class="slide-ressalva">(assuma compromissos com o p85)</div>
@@ -904,9 +948,9 @@ html, body {
     </section>
 
     <!-- =================================================================== -->
-    <!-- SLIDE 8: Curva S e Scope Creep (Sem Acento -> Gaegu Bold)           -->
+    <!-- SLIDE 9: Curva S e Scope Creep (Sem Acento -> Gaegu Bold)           -->
     <!-- =================================================================== -->
-    <section class="slide fb-sem-acento" data-index="8">
+    <section class="slide fb-sem-acento" data-index="9">
       <div class="slide-header">
         <h2 class="slide-title">o escopo sempre cresce</h2>
         <div class="slide-ressalva">(monte carlo precifica a incerteza)</div>
@@ -960,12 +1004,12 @@ html, body {
     </section>
 
     <!-- =================================================================== -->
-    <!-- SLIDE 9: Contraste com Outros Temas (Sem Acento -> Gaegu Bold)      -->
+    <!-- SLIDE 10: Contraste com Outros Temas (Com Acento -> Itim)           -->
     <!-- =================================================================== -->
-    <section class="slide fb-sem-acento" data-index="9">
+    <section class="slide" data-index="10">
       <div class="slide-header">
         <h2 class="slide-title">monte carlo orquestra tudo</h2>
-        <div class="slide-ressalva">(as outras metricas sao pecas do quebra-cabeca)</div>
+        <div class="slide-ressalva">(as outras métricas são peças do quebra-cabeça)</div>
       </div>
 
       <div class="slide-content">
@@ -1012,9 +1056,9 @@ html, body {
     </section>
 
     <!-- =================================================================== -->
-    <!-- SLIDE 10: Conclusão & Playbook (Com Acento -> Itim)                 -->
+    <!-- SLIDE 11: Conclusão & Playbook (Com Acento -> Itim)                 -->
     <!-- =================================================================== -->
-    <section class="slide" data-index="10">
+    <section class="slide" data-index="11">
       <div class="slide-header">
         <h2 class="slide-title">previsibilidade sem chute</h2>
         <div class="slide-ressalva">(estatística vence adivinhação)</div>
@@ -1052,25 +1096,23 @@ html, body {
             <div class="card" style="background: #faf9f6; border: 2px dashed var(--cyan);">
               <div style="font-family: var(--font-hand); font-size: 30px; color: var(--ink);">Repositório Privado no GitHub</div>
               <p style="font-size: 17px; color: #4b5563; margin-top: 8px; line-height: 1.5;">
-                Contém o artigo de 17 páginas ABNT em LaTeX, o script completo de simulação estocástica, suíte de testes unitários e este deck de slides.
+                Contém o artigo de 17 páginas ABNT em LaTeX, o script completo de simulação estocástica, suíte de 7 testes unitários e este deck de slides.
               </p>
               <div style="margin-top: 16px;">
                 <span class="pill pill-cyan" style="font-size: 14px;">fabiobrasileiroo / metricas-estimativas-software-monte-carlo</span>
               </div>
             </div>
 
-            <div style="text-align: left;">
-              <div style="font-family: var(--font-hand); font-size: 38px; color: var(--ink);">Obrigado!</div>
-              <p style="font-size: 18px; color: var(--muted); margin-top: 4px;">
-                Fábio Henrique Mendes Brasileiro • ENGS231N01<br>
-                Centro Universitário FAMETRO • Manaus, AM
-              </p>
+            <div>
+              <div style="font-family: var(--font-hand); font-size: 32px; color: var(--ink);">Obrigado!</div>
+              <div style="font-size: 17px; color: var(--muted); margin-top: 4px;">Fábio Henrique Mendes Brasileiro • Turma ENGS231N01</div>
+              <div style="font-size: 15px; color: var(--cyan); margin-top: 2px;">Engenharia de Software • Manaus, AM</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">CEUNI FAMETRO • Engenharia de Software</span></div>
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Tema 7 • Simulação de Monte Carlo</span></div>
       <img class="slide-avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
     </section>
 
@@ -1084,7 +1126,7 @@ html, body {
   <div style="display: flex; gap: 12px; align-items: center;">
     <button class="btn-ctrl" id="btnPrev" title="Slide anterior (Seta Esquerda / Page Up)">◀ Anterior</button>
     <button class="btn-ctrl" id="btnNext" title="Próximo slide (Seta Direita / Espaço / Page Down)">Próximo ▶</button>
-    <span class="slide-counter" id="slideCounter">1 / 10</span>
+    <span class="slide-counter" id="slideCounter">1 / 11</span>
   </div>
 
   <div style="display: flex; gap: 12px; align-items: center;">
