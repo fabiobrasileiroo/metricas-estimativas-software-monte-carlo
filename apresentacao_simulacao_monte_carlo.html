@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Simulação de Monte Carlo para Previsão de Prazos de Software - Apresentação Acadêmica Fábio Brasileiro">
+<title>Simulação de Monte Carlo — Previsão de Prazos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Itim&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Gaegu';
+  src: url('./fonts/Gaegu-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Itim';
+  src: url('./fonts/Itim-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+:root {
+  --ink: #1c1917;
+  --cyan: #12a7c4;
+  --cyan-ring: rgba(18, 167, 196, 0.2);
+  --cyan-light: #e0f6fa;
+  --cyan-dark: #0b7186;
+  --muted: #78716c;
+  --paper: #fbfaf7;
+  --branco: #ffffff;
+  --line: #e7e2da;
+  --line-strong: #d4cec4;
+  --camiseta: #1f2b47;
+  --acai: #4a1d5c;
+  --pele: #e8b897;
+  --blush: #f08a9a;
+  --green: #10b981;
+  --green-light: #d1fae5;
+  --orange: #f59e0b;
+  --orange-light: #fef3c7;
+  --red: #ef4444;
+  --red-light: #fee2e2;
+
+  --font-gaegu: "Gaegu", cursive, sans-serif;
+  --font-hand: "Itim", cursive, sans-serif;
+  --font-text: "Nunito", system-ui, -apple-system, sans-serif;
+  --font-code: "JetBrains Mono", monospace;
+
+  --radius-card: 16px;
+  --radius-pill: 999px;
+  --shadow-slide: 0 16px 40px -16px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 4px 16px -4px rgba(28, 25, 23, 0.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Palco 16:9 Centralizado */
+.stage {
+  position: fixed;
+  inset: 0 0 64px 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.deck {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform: translate(-50%, -50%) scale(0.65);
+  transform-origin: center center;
+  user-select: none;
+}
+
+/* Slide Base */
+.slide {
+  position: absolute;
+  inset: 0;
+  background: var(--branco);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-slide);
+  overflow: hidden;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+
+.slide.is-active {
+  display: block;
+  opacity: 1;
+}
+
+/* Tipografia Lauren Tan / Fábio Brasileiro */
+.slide-header {
+  position: absolute;
+  left: 90px;
+  top: 60px;
+  right: 480px;
+  z-index: 10;
+}
+
+.slide-title {
+  font-family: var(--font-hand);
+  font-size: 76px;
+  line-height: 1.02;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+
+.slide-ressalva {
+  font-family: var(--font-hand);
+  font-size: 38px;
+  line-height: 1.15;
+  font-weight: 400;
+  color: var(--cyan);
+  margin-top: 6px;
+}
+
+/* Regra sem acento: Gaegu Bold primária */
+.slide.fb-sem-acento .slide-title,
+.slide.fb-sem-acento .slide-ressalva {
+  font-family: var(--font-gaegu);
+  font-weight: 700;
+}
+.slide.fb-sem-acento .slide-title { font-size: 82px; }
+.slide.fb-sem-acento .slide-ressalva { font-size: 42px; }
+
+/* Assinatura no Rodapé */
+.slide-footer-author {
+  position: absolute;
+  left: 90px;
+  bottom: 40px;
+  font-family: var(--font-hand);
+  font-size: 36px;
+  color: var(--ink);
+  z-index: 10;
+}
+
+.slide-footer-tag {
+  font-family: var(--font-text);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 14px;
+  letter-spacing: 0.5px;
+}
+
+/* Personagem Chibi em Giz nos Cantos */
+.slide-avatar {
+  position: absolute;
+  right: 25px;
+  bottom: -15px;
+  width: 440px;
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Área de Conteúdo do Slide */
+.slide-content {
+  position: absolute;
+  left: 90px;
+  top: 200px;
+  right: 460px;
+  bottom: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* Layouts de Conteúdo */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  align-items: center;
+  height: 100%;
+}
+
+.grid-2-wide-img {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+  height: 100%;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  align-items: stretch;
+}
+
+/* Cartões de Conteúdo */
+.card {
+  background: var(--branco);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-title {
+  font-family: var(--font-hand);
+  font-size: 28px;
+  color: var(--ink);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-body {
+  font-size: 19px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.card-highlight {
+  border-left: 5px solid var(--cyan);
+  background: #fdfefe;
+}
+
+/* Imagens dos Gráficos */
+.chart-frame {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-frame img {
+  width: 100%;
+  height: auto;
+  max-height: 570px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.chart-caption {
+  font-size: 15px;
+  color: var(--muted);
+  margin-top: 10px;
+  text-align: center;
+  font-family: var(--font-text);
+  font-weight: 600;
+}
+
+/* Pílulas e Badges */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pill-cyan { background: var(--cyan-light); color: var(--cyan-dark); }
+.pill-green { background: var(--green-light); color: #065f46; }
+.pill-orange { background: var(--orange-light); color: #92400e; }
+.pill-red { background: var(--red-light); color: #991b1b; }
+
+/* Blocos de Código estilo Terminal Clean */
+.code-box {
+  background: #181c24;
+  color: #e5e7eb;
+  border-radius: var(--radius-card);
+  padding: 22px 26px;
+  font-family: var(--font-code);
+  font-size: 16px;
+  line-height: 1.55;
+  box-shadow: 0 10px 25px -10px rgba(0,0,0,0.3);
+  border: 1px solid #2d3748;
+}
+
+.code-box pre {
+  font-family: var(--font-code);
+  font-size: 16px;
+  line-height: 1.55;
+  white-space: pre;
+  margin: 0;
+  overflow-x: auto;
+}
+
+.code-box .kw { color: #f472b6; font-weight: 600; }
+.code-box .fn { color: #60a5fa; }
+.code-box .str { color: #34d399; }
+.code-box .num { color: #fbbf24; }
+.code-box .cm { color: #9ca3af; font-style: italic; }
+
+/* Tabela Comparativa de Paradigmas */
+.matrix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  font-size: 18px;
+}
+
+.matrix-table th {
+  background: #f4f3ef;
+  color: var(--ink);
+  font-family: var(--font-hand);
+  font-size: 22px;
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 2px solid var(--line-strong);
+}
+
+.matrix-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  color: #374151;
+  vertical-align: middle;
+}
+
+.matrix-table tr:last-child td { border-bottom: none; }
+.matrix-table tr:nth-child(even) td { background: #faf9f6; }
+.matrix-table .tag-old { color: #b91c1c; font-weight: 700; }
+.matrix-table .tag-new { color: #047857; font-weight: 700; }
+
+/* Barra de Controles Inferior */
+.controls-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  background: var(--branco);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  z-index: 100;
+}
+
+.btn-ctrl {
+  background: var(--branco);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-ctrl:hover {
+  background: var(--ink);
+  color: var(--branco);
+  border-color: var(--ink);
+}
+
+.slide-counter {
+  font-family: var(--font-hand);
+  font-size: 22px;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+
+/* Barra de Progresso no Topo */
+.progress-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0,0,0,0.04);
+  z-index: 200;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--cyan);
+  width: 10%;
+  transition: width 0.3s ease;
+}
+
+/* Modo Visão Geral (Overview) */
+.overview-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 25, 23, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 300;
+  overflow-y: auto;
+  padding: 50px 30px;
+}
+
+.overview-modal.is-open { display: block; }
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.overview-card {
+  background: var(--branco);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.overview-card:hover, .overview-card.is-active {
+  border-color: var(--cyan);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.overview-num {
+  font-family: var(--font-hand);
+  font-size: 20px;
+  color: var(--cyan);
+}
+
+.overview-title {
+  font-family: var(--font-hand);
+  font-size: 22px;
+  color: var(--ink);
+  margin-top: 6px;
+}
+
+/* ========================================================================== */
+/* IMPRESSÃO / PDF: 1 Slide 1920x1080 Exato por Página                        */
+/* ========================================================================== */
+@page {
+  size: 1920px 1080px;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    width: 1920px !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+  .controls-bar, .progress-container, .overview-modal {
+    display: none !important;
+  }
+  .stage, .deck {
+    position: static !important;
+    transform: none !important;
+    width: 1920px !important;
+    height: auto !important;
+    display: block !important;
+  }
+  .slide {
+    position: relative !important;
+    width: 1920px !important;
+    height: 1080px !important;
+    display: block !important;
+    opacity: 1 !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-container">
+  <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div class="stage">
+  <div class="deck" id="deck">
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 1: Capa (Sem Acento -> Gaegu Bold)                            -->
+    <!-- =================================================================== -->
+    <section class="slide fb-sem-acento is-active" data-index="1">
+      <div class="slide-header">
+        <h1 class="slide-title">previsao de prazos com monte carlo</h1>
+        <div class="slide-ressalva">(porque estimar em horas e puro palpite)</div>
+      </div>
+
+      <div class="slide-content" style="top: 240px;">
+        <div style="max-width: 960px; margin-bottom: 35px;">
+          <p style="font-size: 26px; line-height: 1.4; color: #4b5563; font-weight: 600;">
+            Governança da Medição, Modelo GQM e Análise Estocástica de Incertezas na Engenharia de Software
+          </p>
+          <div style="display: flex; gap: 12px; margin-top: 18px;">
+            <span class="pill pill-cyan">CEUNI FAMETRO</span>
+            <span class="pill pill-cyan">Engenharia de Software</span>
+            <span class="pill pill-cyan">Turma ENGS231N01</span>
+            <span class="pill pill-orange">Tema 7 • Monte Carlo</span>
+          </div>
+        </div>
+
+        <div class="grid-3" style="max-width: 1080px;">
+          <div class="card card-highlight">
+            <div style="font-family: var(--font-gaegu); font-size: 46px; font-weight: 700; color: var(--ink);">10.000</div>
+            <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Rodadas Computadas</div>
+            <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">Simulação não paramétrica de futuros possíveis via bootstrapping.</p>
+          </div>
+          <div class="card card-highlight">
+            <div style="font-family: var(--font-gaegu); font-size: 46px; font-weight: 700; color: var(--ink);">26 Semanas</div>
+            <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Throughput Real</div>
+            <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">102 itens entregues e homologados na Definition of Done.</p>
+          </div>
+          <div class="card card-highlight">
+            <div style="font-family: var(--font-gaegu); font-size: 46px; font-weight: 700; color: var(--ink);">P85 &amp; P95</div>
+            <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Níveis de Certeza</div>
+            <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">Acordos contratuais de SLA auditáveis matematicamente.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">
+        Fábio Henrique Mendes Brasileiro
+        <span class="slide-footer-tag">Prof. Me. Alexsand Farias de Souza • CEUNI FAMETRO</span>
+      </div>
+      <img class="slide-avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 2: O Problema das Estimativas (Com Acento -> Itim)            -->
+    <!-- =================================================================== -->
+    <section class="slide" data-index="2">
+      <div class="slide-header">
+        <h2 class="slide-title">a média é uma ilusão</h2>
+        <div class="slide-ressalva">(e a velocity mente com classe)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <div class="card" style="border-left: 6px solid #ef4444;">
+            <div class="card-title" style="color: #b91c1c;">⚠️ O "Flaw of Averages" (Sam Savage)</div>
+            <p class="card-body">
+              Planos baseados em médias falham na metade dos casos. Se a velocidade média prevê entrega em 15 semanas, prometer essa data é apostar numa moeda não viciada: <strong>50% de probabilidade de atraso</strong>!
+            </p>
+            <div style="margin-top: 14px; padding: 12px; background: #fef2f2; border-radius: 8px; font-size: 16px; color: #991b1b;">
+              Médias aritméticas ignoram a assimetria e a cauda longa de gargalos de software.
+            </div>
+          </div>
+
+          <div class="card" style="border-left: 6px solid #f59e0b;">
+            <div class="card-title" style="color: #b45309;">⛓️ Falácia das Dependências em Série</div>
+            <p class="card-body">
+              Em cadeias de tarefas sequenciais, incertezas se multiplicam. Dez tarefas encadeadas com 75% de certeza individual resultam em:
+            </p>
+            <div style="font-family: var(--font-code); font-size: 22px; font-weight: 700; color: #b45309; margin: 12px 0; text-align: center;">
+              P(Total) = (0,75)¹⁰ = 5,6%
+            </div>
+            <p class="card-body" style="font-size: 16px;">
+              A equipe crê que o plano é sólido, mas a chance de entregar no prazo é de apenas 1 em 18!
+            </p>
+          </div>
+
+          <div class="card" style="border-left: 6px solid #8b5cf6;">
+            <div class="card-title" style="color: #6d28d9;">🎯 Lei de Goodhart nos Story Points</div>
+            <p class="card-body">
+              <em>"Quando uma métrica se torna meta, ela deixa de ser uma boa métrica."</em>
+              Exigir aumento de Velocity apenas inflaciona as pontuações no Planning Poker. A pontuação sobe, mas a quantidade de valor entregue permanece estagnada.
+            </p>
+          </div>
+
+          <div class="card" style="border-left: 6px solid var(--cyan);">
+            <div class="card-title" style="color: var(--cyan-dark);">💡 Onde os Outros Temas Falham</div>
+            <p class="card-body">
+              Planning Poker é votação subjetiva; Horas Homem ignoram filas; Velocity esconde a variabilidade.
+              <strong>Monte Carlo resolve isso:</strong> abandona o chute e simula diretamente o fluxo factual.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Tema 7 • Simulação de Monte Carlo</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 3: Física e Origem (Sem Acento -> Gaegu Bold)                 -->
+    <!-- =================================================================== -->
+    <section class="slide fb-sem-acento" data-index="3">
+      <div class="slide-header">
+        <h2 class="slide-title">do cassino de monaco ao software</h2>
+        <div class="slide-ressalva">(stanislaw ulam jogava paciencia no hospital)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2-wide-img">
+          <div class="chart-frame">
+            <img src="./img/fig1_fisica_area_monte_carlo.png" alt="Método de Rejeição e Convergência de Monte Carlo">
+            <div class="chart-caption">Figura 1 — Amostragem por rejeição (área de π/4) e convergência assintótica O(1/√N)</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="card">
+              <div class="card-title">⚛️ Projeto Manhattan (1946)</div>
+              <p class="card-body">
+                Concebido por Stanislaw Ulam, John von Neumann e Nicholas Metropolis em Los Alamos para resolver equações integro-diferenciais de difusão de nêutrons intratáveis analiticamente.
+              </p>
+            </div>
+
+            <div class="card">
+              <div class="card-title">🎯 Método de Rejeição (Hit-or-Miss)</div>
+              <p class="card-body">
+                Para calcular a área de um lago irregular ou quarto de círculo, sorteiam-se pontos uniformes em um retângulo circunscrito. A fração de pontos dentro do perímetro converge para a área exata.
+              </p>
+            </div>
+
+            <div class="card">
+              <div class="card-title">📈 Lei dos Grandes Números</div>
+              <p class="card-body">
+                O erro estatístico decai com taxa <strong>O(1/√N)</strong>. Com 10.000 iterações, a dispersão é amortecida e a distribuição empírica atinge precisão cirúrgica para previsões de engenharia.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Fundamentação Físico-Matemática</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 4: Governança & GQM (Com Acento -> Itim)                      -->
+    <!-- =================================================================== -->
+    <section class="slide" data-index="4">
+      <div class="slide-header">
+        <h2 class="slide-title">gqm: meça com propósito</h2>
+        <div class="slide-ressalva">(métrica sem pergunta é só vaidade no dashboard)</div>
+      </div>
+
+      <div class="slide-content">
+        <div style="display: flex; flex-direction: column; gap: 22px;">
+          <!-- Nível 1: Meta -->
+          <div class="card" style="border: 2px solid var(--ink); background: #faf9f6;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span class="pill pill-cyan">Nível Conceitual • Goal (Meta)</span>
+              <span style="font-size: 14px; font-weight: 700; color: var(--muted);">ISO/IEC/IEEE 15939</span>
+            </div>
+            <p style="font-size: 24px; font-family: var(--font-hand); color: var(--ink); margin-top: 10px;">
+              "Prever prazos e dimensionar a capacidade de entrega da release com respaldo estatístico auditável, mitigando riscos de estouro de cronograma e descumprimento de SLA."
+            </p>
+          </div>
+
+          <!-- Nível 2 & 3: Perguntas e Métricas -->
+          <div class="grid-3">
+            <div class="card" style="border-top: 5px solid #3b82f6;">
+              <div style="font-weight: 700; color: #1d4ed8; font-size: 15px;">PERGUNTA 1 (Q1)</div>
+              <div style="font-family: var(--font-hand); font-size: 21px; margin: 8px 0; color: var(--ink);">
+                Qual a vazão histórica real entregue pela equipe?
+              </div>
+              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
+                <span class="pill pill-cyan" style="font-size: 12px;">Métrica Primária (M1)</span>
+                <p style="font-size: 16px; margin-top: 6px; color: #4b5563;">
+                  Histórico de <strong>Throughput semanal</strong> (26 semanas, 102 itens homologados na DoD).
+                </p>
+              </div>
+            </div>
+
+            <div class="card" style="border-top: 5px solid #10b981;">
+              <div style="font-weight: 700; color: #047857; font-size: 15px;">PERGUNTA 2 (Q2)</div>
+              <div style="font-family: var(--font-hand); font-size: 21px; margin: 8px 0; color: var(--ink);">
+                Qual a probabilidade de concluir 60 itens até cada semana?
+              </div>
+              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
+                <span class="pill pill-green" style="font-size: 12px;">Métrica Derivada (M2)</span>
+                <p style="font-size: 16px; margin-top: 6px; color: #4b5563;">
+                  Distribuição cumulativa de <strong>10.000 iterações</strong> com percentis P50, P85 e P95.
+                </p>
+              </div>
+            </div>
+
+            <div class="card" style="border-top: 5px solid #f59e0b;">
+              <div style="font-weight: 700; color: #b45309; font-size: 15px;">PERGUNTA 3 (Q3)</div>
+              <div style="font-family: var(--font-hand); font-size: 21px; margin: 8px 0; color: var(--ink);">
+                Qual o impacto do Scope Creep no cumprimento do prazo?
+              </div>
+              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
+                <span class="pill pill-orange" style="font-size: 12px;">Métrica de Risco (M3)</span>
+                <p style="font-size: 16px; margin-top: 6px; color: #4b5563;">
+                  <strong>Delta semanas</strong> no percentil P85 entre escopo fixo e dinâmico com descoberta.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Governança da Medição • Modelo GQM</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 5: Dado Primário Throughput (Com Acento -> Itim)              -->
+    <!-- =================================================================== -->
+    <section class="slide" data-index="5">
+      <div class="slide-header">
+        <h2 class="slide-title">conte itens concluídos</h2>
+        <div class="slide-ressalva">(throughput não aceita debate filosófico)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2-wide-img">
+          <div class="chart-frame">
+            <img src="./img/fig2_throughput_historico.png" alt="Distribuição Histórica do Throughput Semanal">
+            <div class="chart-caption">Figura 2 — Vazão semanal empírica de 26 semanas (102 itens homologados)</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div class="card">
+              <div class="card-title">📊 Estatística Descritiva Real</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+                <div style="background: #f3f4f6; padding: 10px 14px; border-radius: 8px;">
+                  <div style="font-size: 13px; color: var(--muted); font-weight: 700;">MÉDIA SEMANAL</div>
+                  <div style="font-size: 26px; font-weight: 700; color: var(--ink);">3,92 itens</div>
+                </div>
+                <div style="background: #f3f4f6; padding: 10px 14px; border-radius: 8px;">
+                  <div style="font-size: 13px; color: var(--muted); font-weight: 700;">DESVIO PADRÃO</div>
+                  <div style="font-size: 26px; font-weight: 700; color: var(--ink);">1,49 itens</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">⚡ A Realidade do Fluxo</div>
+              <p class="card-body">
+                A vazão oscila entre <strong>1 e 7 itens/semana</strong>. O sistema absorve imprevistos reais: feriados, bugs em produção, débito técnico e impedimentos de infraestrutura.
+              </p>
+            </div>
+
+            <div class="card" style="border-left: 5px solid #10b981;">
+              <div class="card-title" style="color: #047857;">💎 Vantagem sobre Story Points</div>
+              <p class="card-body">
+                Throughput é <strong>factual e auditável</strong> no git/Kanban. Não exige reuniões cansativas de Planning Poker e elimina discussões subjetivas sobre "se uma história vale 3 ou 5 pontos".
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Throughput Empírico da Equipe</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 6: Open Source & Algoritmo (Com Acento -> Itim)               -->
+    <!-- =================================================================== -->
+    <section class="slide" data-index="6">
+      <div class="slide-header">
+        <h2 class="slide-title">leia o código-fonte</h2>
+        <div class="slide-ressalva">(a lógica do open source cabe em vinte linhas)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <div class="code-box">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #374151;">
+              <span style="color: #93c5fd; font-size: 14px;">monte_carlo.py (rodbv/quando inspired)</span>
+              <span style="color: #9ca3af; font-size: 14px;">Python 3.12+</span>
+            </div>
+            <pre><code><span class="kw">import</span> random, numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">simular_monte_carlo</span>(historico, backlog=<span class="num">60</span>, runs=<span class="num">10000</span>):
+    semanas = np.zeros(runs, dtype=int)
+    <span class="kw">for</span> i <span class="kw">in</span> range(runs):
+        restante, t = backlog, <span class="num">0</span>
+        <span class="kw">while</span> restante &gt; <span class="num">0</span>:
+            t += <span class="num">1</span>
+            <span class="cm"># Amostra com reposição do histórico real</span>
+            vazao = random.choice(historico)
+            restante -= vazao
+        semanas[i] = t
+    <span class="kw">return</span> {
+        <span class="str">'P50'</span>: np.percentile(semanas, <span class="num">50</span>),
+        <span class="str">'P85'</span>: np.percentile(semanas, <span class="num">85</span>),
+        <span class="str">'P95'</span>: np.percentile(semanas, <span class="num">95</span>),
+    }</code></pre>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div class="card">
+              <div class="card-title">🌐 Projetos Open Source Testados</div>
+              <ul style="margin-left: 20px; font-size: 17px; line-height: 1.6; color: #374151;">
+                <li><strong>rodbv/quando</strong> (Python): Biblioteca open-source para cálculo de previsibilidade probabilística via Jira e CSV.</li>
+                <li><strong>thawkin3/monte-carlo</strong> (TypeScript): Estimador estocástico web/CLI baseado em fluxo empírico.</li>
+                <li><strong>Troy Magennis / FocusedObjective</strong>: Modelos de referência adotados pela Agile Alliance.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <div class="card-title">🎲 Bootstrapping Não Paramétrico</div>
+              <p class="card-body">
+                Sorteia-se com reposição a vazão semanal diretamente do vetor empírico. <strong>Não força uma curva Gaussiana</strong> artificial: as assimetrias e feriados do passado são respeitados na simulação do futuro.
+              </p>
+            </div>
+
+            <div class="card" style="border-left: 5px solid var(--cyan);">
+              <div class="card-title" style="color: var(--cyan-dark);">⚡ Desempenho Computacional</div>
+              <p class="card-body">
+                Com NumPy, <strong>10.000 iterações</strong> são processadas em menos de 0,5 segundos. Previsões contínuas podem rodar automaticamente no pipeline de CI/CD a cada merge no main!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Engenharia Open Source &amp; Algoritmo</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 7: Histograma de Prazos (Com Acento -> Itim)                  -->
+    <!-- =================================================================== -->
+    <section class="slide" data-index="7">
+      <div class="slide-header">
+        <h2 class="slide-title">p50 é cara ou coroa</h2>
+        <div class="slide-ressalva">(assuma compromissos com o p85)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2-wide-img">
+          <div class="chart-frame">
+            <img src="./img/fig3_monte_carlo_prazos_histograma.png" alt="Histograma de Prazos de Monte Carlo">
+            <div class="chart-caption">Figura 3 — Histograma de semanas para concluir 60 itens (10.000 rodadas de Monte Carlo)</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="card" style="border-left: 6px solid #10b981;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="card-title" style="color: #047857; margin-bottom: 0;">P50 (Mediana)</span>
+                <span style="font-family: var(--font-hand); font-size: 32px; font-weight: 700; color: #047857;">16 Semanas</span>
+              </div>
+              <p class="card-body" style="font-size: 16px; margin-top: 6px;">
+                50% das simulações entregaram até aqui. Mas 50% atrasaram! Prometer o P50 a clientes corporativos é pura roleta russa.
+              </p>
+            </div>
+
+            <div class="card" style="border-left: 6px solid #f59e0b; background: #fffdfa;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="card-title" style="color: #b45309; margin-bottom: 0;">P85 (Compromisso Ágil)</span>
+                <span style="font-family: var(--font-hand); font-size: 32px; font-weight: 700; color: #b45309;">17 Semanas</span>
+              </div>
+              <p class="card-body" style="font-size: 16px; margin-top: 6px;">
+                Em 85 de cada 100 futuros possíveis, a equipe entrega até 17 semanas. O padrão ouro de governança para acordos de nível de serviço.
+              </p>
+            </div>
+
+            <div class="card" style="border-left: 6px solid #ef4444;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="card-title" style="color: #b91c1c; margin-bottom: 0;">P95 (Conservador / SLA)</span>
+                <span style="font-family: var(--font-hand); font-size: 32px; font-weight: 700; color: #b91c1c;">18 Semanas</span>
+              </div>
+              <p class="card-body" style="font-size: 16px; margin-top: 6px;">
+                Recomendado para contratos com multas pesadas de descumprimento de SLA ou janelas regulatórias rígidas (BACEN, LGPD).
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Resultados da Simulação • Níveis de Risco</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 8: Curva S e Scope Creep (Sem Acento -> Gaegu Bold)           -->
+    <!-- =================================================================== -->
+    <section class="slide fb-sem-acento" data-index="8">
+      <div class="slide-header">
+        <h2 class="slide-title">o escopo sempre cresce</h2>
+        <div class="slide-ressalva">(monte carlo precifica a incerteza)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2-wide-img">
+          <div class="chart-frame">
+            <img src="./img/fig4_curva_s_cdf_risco.png" alt="Curva S Cumulativa comparando Escopo Fixo e Dinâmico">
+            <div class="chart-caption">Figura 4 — Curva S (CDF) contrastando Escopo Fixo vs Escopo Dinâmico com Scope Creep</div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div class="card">
+              <div class="card-title">📈 A Curva S Cumulativa</div>
+              <p class="card-body">
+                A Curva S responde diretamente ao stakeholder: <em>"Se você precisa de 90% de certeza, o prazo é X; se aceita 80%, o prazo é Y."</em>
+              </p>
+            </div>
+
+            <div class="card" style="border-left: 5px solid #ef4444;">
+              <div class="card-title" style="color: #b91c1c;">💥 O Custo Real do Scope Creep</div>
+              <p class="card-body">
+                Com uma taxa modesta de descoberta de novos itens (+0,65 itens/semana):
+              </p>
+              <div style="display: flex; justify-content: space-around; margin-top: 10px; text-align: center;">
+                <div>
+                  <div style="font-size: 13px; color: var(--muted);">P85 ESCOPO FIXO</div>
+                  <div style="font-family: var(--font-gaegu); font-size: 32px; font-weight: 700; color: #2563eb;">17 Semanas</div>
+                </div>
+                <div style="font-size: 28px; color: #ef4444; align-self: center;">➔</div>
+                <div>
+                  <div style="font-size: 13px; color: var(--muted);">P85 DINÂMICO</div>
+                  <div style="font-family: var(--font-gaegu); font-size: 32px; font-weight: 700; color: #dc2626;">21 Semanas</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="border-left: 5px solid var(--cyan);">
+              <div class="card-title" style="color: var(--cyan-dark);">🤝 Negociação Baseada em Fatos</div>
+              <p class="card-body">
+                O cliente descobre que pedir mais 10 funcionalidades custa <strong>4 semanas adicionais de prazo</strong>. A conversa deixa de ser emocional e se torna matemática.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Curva S &amp; Gestão do Scope Creep</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 9: Contraste com Outros Temas (Sem Acento -> Gaegu Bold)      -->
+    <!-- =================================================================== -->
+    <section class="slide fb-sem-acento" data-index="9">
+      <div class="slide-header">
+        <h2 class="slide-title">monte carlo orquestra tudo</h2>
+        <div class="slide-ressalva">(as outras metricas sao pecas do quebra-cabeca)</div>
+      </div>
+
+      <div class="slide-content">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">TEMA DA DISCIPLINA</th>
+              <th style="width: 35%;">MÉTODO CONVENCIONAL</th>
+              <th style="width: 40%;">A RESPOSTA COM MONTE CARLO (TEMA 7)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Story Points &amp; Planning Poker</strong></td>
+              <td><span class="tag-old">❌ Subjetivo</span> — Votação arbitrária distorcida pela Lei de Goodhart.</td>
+              <td><span class="tag-new">✔ Throughput Factual</span> — Conta itens entregues na Definition of Done.</td>
+            </tr>
+            <tr>
+              <td><strong>Velocity</strong></td>
+              <td><span class="tag-old">❌ Determinístico</span> — Média aritmética que ignora dispersão e variância.</td>
+              <td><span class="tag-new">✔ Curva Cumulativa</span> — Simula 10.000 futuros e entrega percentis de certeza.</td>
+            </tr>
+            <tr>
+              <td><strong>CFD (Fluxo Cumulativo)</strong></td>
+              <td><span class="tag-old">🔍 Diagnóstico Passado</span> — Exibe o acúmulo de WIP histórico.</td>
+              <td><span class="tag-new">✔ Projeção Futura</span> — Alimenta a simulação com a vazão extraída do CFD.</td>
+            </tr>
+            <tr>
+              <td><strong>Lei de Little (L = λW)</strong></td>
+              <td><span class="tag-old">📐 Estático</span> — Assume fluxo perfeitamente contínuo e estável.</td>
+              <td><span class="tag-new">✔ Modelo Estocástico</span> — Simula a turbulência quando as premissas variam.</td>
+            </tr>
+            <tr>
+              <td><strong>Lead Time / Cycle Time</strong></td>
+              <td><span class="tag-old">⏳ Micro-nível</span> — Mede a duração de itens individuais isolados.</td>
+              <td><span class="tag-new">✔ Macro-nível</span> — Responde: <em>"Quando a release inteira estará concluída?"</em></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Síntese Comparativa da Engenharia</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SLIDE 10: Conclusão & Playbook (Com Acento -> Itim)                 -->
+    <!-- =================================================================== -->
+    <section class="slide" data-index="10">
+      <div class="slide-header">
+        <h2 class="slide-title">previsibilidade sem chute</h2>
+        <div class="slide-ressalva">(estatística vence adivinhação)</div>
+      </div>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="card" style="border-left: 6px solid var(--ink);">
+              <div style="font-weight: 700; color: var(--muted); font-size: 14px;">PASSO 1</div>
+              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Limite o WIP (Kanban)</div>
+              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Estabilize o fluxo reduzindo multitarefa para que a vazão histórica reflita a capacidade real.</p>
+            </div>
+
+            <div class="card" style="border-left: 6px solid #3b82f6;">
+              <div style="font-weight: 700; color: #1d4ed8; font-size: 14px;">PASSO 2</div>
+              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Colete Throughput Semanal</div>
+              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Registre a quantidade de itens concluídos por semana (mínimo de 20 a 30 observações).</p>
+            </div>
+
+            <div class="card" style="border-left: 6px solid #10b981;">
+              <div style="font-weight: 700; color: #047857; font-size: 14px;">PASSO 3</div>
+              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Rode 10.000 Simulações</div>
+              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Utilize bibliotecas open-source (rodbv/quando) com amostragem com reposição e Scope Creep.</p>
+            </div>
+
+            <div class="card" style="border-left: 6px solid var(--cyan);">
+              <div style="font-weight: 700; color: var(--cyan-dark); font-size: 14px;">PASSO 4</div>
+              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Pactue no P85 ou P95</div>
+              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Apresente a Curva S aos patrocinadores e assuma compromissos com risco controlado.</p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; justify-content: center; gap: 24px; padding-left: 20px;">
+            <div class="card" style="background: #faf9f6; border: 2px dashed var(--cyan);">
+              <div style="font-family: var(--font-hand); font-size: 30px; color: var(--ink);">Repositório Privado no GitHub</div>
+              <p style="font-size: 17px; color: #4b5563; margin-top: 8px; line-height: 1.5;">
+                Contém o artigo de 17 páginas ABNT em LaTeX, o script completo de simulação estocástica, suíte de testes unitários e este deck de slides.
+              </p>
+              <div style="margin-top: 16px;">
+                <span class="pill pill-cyan" style="font-size: 14px;">fabiobrasileiroo / metricas-estimativas-software-monte-carlo</span>
+              </div>
+            </div>
+
+            <div style="text-align: left;">
+              <div style="font-family: var(--font-hand); font-size: 38px; color: var(--ink);">Obrigado!</div>
+              <p style="font-size: 18px; color: var(--muted); margin-top: 4px;">
+                Fábio Henrique Mendes Brasileiro • ENGS231N01<br>
+                Centro Universitário FAMETRO • Manaus, AM
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">CEUNI FAMETRO • Engenharia de Software</span></div>
+      <img class="slide-avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
+    </section>
+
+  </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- CONTROLES DE NAVEGAÇÃO E ATALHOS                                        -->
+<!-- ======================================================================= -->
+<nav class="controls-bar" aria-label="Controles da apresentação">
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <button class="btn-ctrl" id="btnPrev" title="Slide anterior (Seta Esquerda / Page Up)">◀ Anterior</button>
+    <button class="btn-ctrl" id="btnNext" title="Próximo slide (Seta Direita / Espaço / Page Down)">Próximo ▶</button>
+    <span class="slide-counter" id="slideCounter">1 / 10</span>
+  </div>
+
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <button class="btn-ctrl" id="btnOverview" title="Visão geral de todos os slides (Tecla O)">📑 Visão Geral</button>
+    <button class="btn-ctrl" id="btnFullscreen" title="Alternar tela cheia (Tecla F)">⛶ Tela Cheia</button>
+    <button class="btn-ctrl" id="btnPrint" title="Imprimir ou salvar PDF (Tecla P)">🖨️ Imprimir / PDF</button>
+  </div>
+</nav>
+
+<!-- Modal de Visão Geral -->
+<div class="overview-modal" id="overviewModal">
+  <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto 30px auto;">
+    <h2 style="font-family: var(--font-hand); font-size: 36px; color: var(--branco);">Visão Geral dos Slides</h2>
+    <button class="btn-ctrl" id="btnCloseOverview">✕ Fechar</button>
+  </div>
+  <div class="overview-grid" id="overviewGrid"></div>
+</div>
+
+<script>
+(function() {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const deck = document.getElementById('deck');
+  const counter = document.getElementById('slideCounter');
+  const progressBar = document.getElementById('progressBar');
+  const overviewModal = document.getElementById('overviewModal');
+  const overviewGrid = document.getElementById('overviewGrid');
+
+  // Ajuste de escala 16:9 responsivo
+  function resizeDeck() {
+    const scale = Math.min(window.innerWidth / 1920, (window.innerHeight - 64) / 1080);
+    deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+  window.addEventListener('resize', resizeDeck);
+  window.addEventListener('load', resizeDeck);
+
+  function showSlide(index) {
+    if (index < 0) index = 0;
+    if (index >= total) index = total - 1;
+    current = index;
+
+    slides.forEach((s, i) => {
+      s.classList.toggle('is-active', i === current);
+    });
+
+    counter.textContent = `${current + 1} / ${total}`;
+    progressBar.style.width = `${((current + 1) / total) * 100}%`;
+    updateOverviewActive();
+  }
+
+  function nextSlide() { showSlide(current + 1); }
+  function prevSlide() { showSlide(current - 1); }
+
+  document.getElementById('btnNext').addEventListener('click', nextSlide);
+  document.getElementById('btnPrev').addEventListener('click', prevSlide);
+
+  // Teclado
+  window.addEventListener('keydown', (e) => {
+    if (overviewModal.classList.contains('is-open')) {
+      if (e.key === 'Escape' || e.key === 'o' || e.key === 'O') {
+        toggleOverview();
+      }
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'PageDown':
+      case ' ':
+        e.preventDefault();
+        nextSlide();
+        break;
+      case 'ArrowLeft':
+      case 'PageUp':
+      case 'Backspace':
+        e.preventDefault();
+        prevSlide();
+        break;
+      case 'Home':
+        e.preventDefault();
+        showSlide(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        showSlide(total - 1);
+        break;
+      case 'f':
+      case 'F':
+        toggleFullscreen();
+        break;
+      case 'o':
+      case 'O':
+        toggleOverview();
+        break;
+      case 'p':
+      case 'P':
+        window.print();
+        break;
+    }
+  });
+
+  // Tela Cheia
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+  document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
+  document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
+  // Visão Geral
+  function buildOverview() {
+    overviewGrid.innerHTML = '';
+    slides.forEach((s, i) => {
+      const card = document.createElement('div');
+      card.className = `overview-card ${i === current ? 'is-active' : ''}`;
+      const title = s.querySelector('.slide-title')?.textContent || `Slide ${i+1}`;
+      const ressalva = s.querySelector('.slide-ressalva')?.textContent || '';
+      card.innerHTML = `
+        <div class="overview-num">SLIDE ${i + 1}</div>
+        <div class="overview-title">${title}</div>
+        <div style="font-size: 14px; color: var(--cyan); margin-top: 4px;">${ressalva}</div>
+      `;
+      card.addEventListener('click', () => {
+        showSlide(i);
+        toggleOverview();
+      });
+      overviewGrid.appendChild(card);
+    });
+  }
+
+  function updateOverviewActive() {
+    const cards = overviewGrid.querySelectorAll('.overview-card');
+    cards.forEach((c, i) => c.classList.toggle('is-active', i === current));
+  }
+
+  function toggleOverview() {
+    const isOpen = overviewModal.classList.toggle('is-open');
+    if (isOpen) buildOverview();
+  }
+
+  document.getElementById('btnOverview').addEventListener('click', toggleOverview);
+  document.getElementById('btnCloseOverview').addEventListener('click', toggleOverview);
+
+  showSlide(0);
+})();
+</script>
+</body>
+</html>

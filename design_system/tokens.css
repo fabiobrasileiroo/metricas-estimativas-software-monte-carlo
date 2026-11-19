@@ -1,0 +1,229 @@
+/* Fábio Brasileiro — generated from tokens.json */
+:root, [data-theme="light"] {
+  --ink: #1c1917; /* Tinta: todo texto, títulos dos slides e o nome. 16,7:1 sobre paper. */
+  --cyan: #12a7c4; /* Ciano da ressalva entre parênteses (sempre ciano, nunca rosa) e borda de destaque. Só em texto grande (≥24px): 2,9:1 sobre branco, abaixo até do mínimo de 3:1 — a fonte original mantém assim; nunca use em texto pequeno. */
+  --cyan-ring: #12a7c433; /* Anel de foco/seleção (box-shadow 2px) em cartões de frase. */
+  --muted: #78716c; /* Texto secundário: lede, subtítulos de seção, metadados. 4,6:1 sobre paper. */
+  --paper: #fbfaf7; /* Fundo da página de referência. */
+  --branco: #ffffff; /* Fundo dos slides, banners e cartões; o papel do desenho é clareado até este branco. */
+  --line: #e7e2da; /* Borda fina (1px) de cartões, botões e slides. */
+  --camiseta: #1f2b47; /* Azul-marinho da camiseta do personagem. */
+  --acai: #4a1d5c; /* Roxo do açaí, a assinatura do personagem. */
+  --pele: #e8b897; /* Pele do personagem em giz. */
+  --blush: #f08a9a; /* Risquinhos rosados da bochecha. Ilustração apenas, nunca na ressalva. */
+  --tag-bg: #e0f6fa; /* Fundo da etiqueta de fonte (principal, alternativa…). */
+  --tag-ink: #0b7186; /* Texto da etiqueta sobre tag-bg (5,0:1). */
+  --warn-bg: #fdecea; /* Fundo da etiqueta "evitar". */
+  --warn-ink: #a1302a; /* Texto da etiqueta "evitar" sobre warn-bg (6,2:1). */
+  --shadow-slide: 0 10px 30px -18px rgba(0,0,0,0.25); /* Sombra suave sob o slide de capa. */
+  --shadow-ring: 0 0 0 2px #12a7c433; /* Destaque de cartão de frase selecionado/hover. */
+}
+:root {
+  --space-8: 8px; /* Gap entre botões/pílulas do seletor de fonte. */
+  --space-12: 12px; /* Gap da grade de frases; margem acima das ações. */
+  --space-14: 14px; /* Gap dos espécimes; padding vertical do cartão de frase. */
+  --space-16: 16px; /* Padding horizontal de botão e cartão de frase. */
+  --space-20: 20px; /* Gap da grade de avatares. */
+  --space-28: 28px; /* Padding lateral da página; gap foto de perfil × banner. */
+  --space-48: 48px; /* Padding superior da página. */
+  --space-72: 72px; /* Espaço acima de cada título de seção. */
+  --space-96: 96px; /* Padding inferior da página. */
+  --slide-inset: 110px; /* Margem esquerda/superior do texto no slide 1920×1080. */
+  --radius-swatch: 10px; /* Amostras de cor. */
+  --radius-card: 14px; /* Slides, banners, cartões de frase, espécime e avatar. */
+  --radius-pill: 999px; /* Botões e etiquetas. */
+  --radius-round: 50%; /* Foto de perfil circular. */
+  --font-gaegu: "Gaegu", cursive;
+  --font-hand: "Itim", cursive;
+  --font-text: "Nunito", system-ui, sans-serif;
+  --font-patrick: "Patrick Hand", cursive;
+  --font-gochi: "Gochi Hand", cursive;
+  --font-sniglet: "Sniglet", cursive;
+  --font-shortstack: "Short Stack", cursive;
+  --text-slide-titulo-sem-acento: 700 176px/1 var(--font-gaegu); /* Fonte primária: título do slide quando título + ressalva NÃO têm acento (Gaegu Bold). Mesmo encolhimento do slide-titulo. */
+  --text-slide-ressalva-sem-acento: 700 84px/1 var(--font-gaegu); /* Ressalva em cyan com Gaegu Bold, só se a frase inteira não tiver acento. */
+  --text-slide-titulo: 400 176px/1 var(--font-hand); /* Título do slide quando a frase TEM acento (Itim). Encolhe de 4 em 4px até caber em 88% da largura (mín. 60px). */
+  --text-slide-ressalva: 400 84px/1 var(--font-hand); /* Ressalva em cyan quando a frase tem acento (Itim), 44px abaixo do título. */
+  --text-slide-nome: 400 88px/1 var(--font-hand); /* Nome embaixo à esquerda, em ink. Sempre Itim, mesmo em slide com Gaegu. */
+  --text-display: 400 64px/1 var(--font-hand); /* Título da página (44px abaixo de 720px). */
+  --text-display-sub: 400 30px/1 var(--font-hand); /* Linha sob o display, em cyan. */
+  --text-secao: 400 36px/1.15 var(--font-hand); /* Título de seção, minúsculo, 72px acima. */
+  --text-especime: 400 40px/1.15 var(--font-hand); /* Amostra de fonte. */
+  --text-frase-sem-acento: 700 24px/1.1 var(--font-gaegu); /* Afirmação no cartão quando a frase inteira não tem acento (Gaegu Bold, primária). */
+  --text-frase: 400 24px/1.1 var(--font-hand); /* Afirmação no cartão de frase quando a frase tem acento (Itim). */
+  --text-cartao-nome: 400 22px/1.2 var(--font-hand); /* Nome da pose no cartão de avatar. */
+  --text-frase-ressalva: 400 18px/1.2 var(--font-hand); /* Ressalva no cartão de frase, em cyan. */
+  --text-corpo: 400 16px/1.5 var(--font-text); /* Parágrafos (Nunito, Google Fonts). */
+  --text-botao: 600 14px/1.2 var(--font-text); /* Rótulo de botão pílula. */
+  --text-meta: 400 14px/1.4 var(--font-text); /* Metadados, em muted. */
+  --text-legenda: 400 12px/1.4 var(--font-text); /* Notas pequenas, em muted. */
+  --text-etiqueta: 800 11px/1.2 var(--font-text); /* Etiqueta em caixa alta (tag-ink sobre tag-bg). */
+}
+.slide-titulo-sem-acento {
+  font-family: var(--font-gaegu);
+  font-size: 176px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.slide-ressalva-sem-acento {
+  font-family: var(--font-gaegu);
+  font-size: 84px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.slide-titulo {
+  font-family: var(--font-hand);
+  font-size: 176px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.slide-ressalva {
+  font-family: var(--font-hand);
+  font-size: 84px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.slide-nome {
+  font-family: var(--font-hand);
+  font-size: 88px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.display {
+  font-family: var(--font-hand);
+  font-size: 64px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.display-sub {
+  font-family: var(--font-hand);
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.secao {
+  font-family: var(--font-hand);
+  font-size: 36px;
+  line-height: 1.15;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.especime {
+  font-family: var(--font-hand);
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.frase-sem-acento {
+  font-family: var(--font-gaegu);
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.frase {
+  font-family: var(--font-hand);
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.cartao-nome {
+  font-family: var(--font-hand);
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.frase-ressalva {
+  font-family: var(--font-hand);
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.corpo {
+  font-family: var(--font-text);
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.botao {
+  font-family: var(--font-text);
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.meta {
+  font-family: var(--font-text);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.legenda {
+  font-family: var(--font-text);
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.etiqueta {
+  font-family: var(--font-text);
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+@font-face {
+  font-family: "Gaegu";
+  src: url("fonts/Gaegu-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Itim";
+  src: url("fonts/Itim-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Patrick Hand";
+  src: url("fonts/PatrickHand-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gochi Hand";
+  src: url("fonts/GochiHand-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sniglet";
+  src: url("fonts/Sniglet-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Short Stack";
+  src: url("fonts/ShortStack-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
