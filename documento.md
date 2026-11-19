@@ -16,15 +16,15 @@ ano: 2026
 
 # Resumo
 
-A previsibilidade de prazos na engenharia de software enfrenta desafios estruturais quando fundamentada em estimativas determinísticas, como soma de horas ou Story Points via Planning Poker, devido à variabilidade inerente do fluxo e às dependências probabilísticas em série. Este trabalho investiga a Simulação de Monte Carlo aplicada à previsão de prazos sob a perspectiva da Governança da Medição e do Modelo Goal-Question-Metric (GQM), em conformidade com a norma ISO/IEC/IEEE 15939. Resgatam-se as raízes físico-matemáticas do método em Los Alamos (Ulam, von Neumann e Metropolis), ilustrando o cálculo de áreas irregulares por amostragem de rejeição e a convergência estocástica $O(1/\sqrt{N})$. Demonstra-se uma aplicação prática com 10.000 iterações de *bootstrapping* não paramétrico sobre o histórico de 26 semanas de *Throughput* (102 itens validados) de uma equipe ágil, contrastando cenários de escopo fixo e escopo com expansão dinâmica (*Scope Creep*). Os resultados confirmam que compromissos respaldados em percentis estocásticos (P85 e P95) viabilizam previsões estatisticamente auditáveis e sustentáveis.
+A previsibilidade de prazos na engenharia de software enfrenta desafios estruturais quando fundamentada em estimativas determinísticas, como soma de horas ou Story Points via Planning Poker, devido à variabilidade inerente do fluxo e às dependências probabilísticas em série. Este trabalho investiga a Simulação de Monte Carlo aplicada à previsão de prazos sob a perspectiva da Governança da Medição e do Modelo Goal-Question-Metric (GQM), em conformidade com a norma ISO/IEC/IEEE 15939. Resgatam-se as raízes físico-matemáticas do método em Los Alamos (Ulam, von Neumann e Metropolis), ilustrando o cálculo de áreas irregulares por amostragem de rejeição e a convergência estocástica $O(1/\sqrt{N})$. Demonstra-se uma aplicação prática com 10.000 iterações de *bootstrapping* não paramétrico sobre o histórico de 26 semanas de *Throughput* (102 itens validados) de uma equipe ágil, contrastando cenários de escopo fixo e escopo com expansão dinâmica (*Scope Creep*), com motor implementado em TypeScript e conferido pela aproximação analítica do Teorema Central do Limite para processos de renovação. Para testar o método fora do exemplo didático, aplicou-se um *backtest* rolante a 572 *pull requests* mergeados em 52 semanas no repositório de grande porte `nestjs/nest`: no período estável, o compromisso P85 foi cumprido em 83,3% das janelas, a mediana em 50,0% e a projeção por média (lógica da *velocity*) em apenas 41,7%. Os resultados confirmam que compromissos respaldados em percentis estocásticos (P85 e P95) viabilizam previsões estatisticamente auditáveis e sustentáveis.
 
-Palavras-chave: Simulação de Monte Carlo. Estimativas de Software. Throughput. Governança da Medição. Modelo GQM. ISO 15939. Previsibilidade Ágil.
+Palavras-chave: Simulação de Monte Carlo. Estimativas de Software. Throughput. Backtesting. Governança da Medição. Modelo GQM. ISO 15939. Previsibilidade Ágil.
 
 # Abstract
 
-Schedule predictability in software engineering faces structural bottlenecks when relying on deterministic point estimates, such as hour summation or Story Points via Planning Poker, due to workflow variance and serial task dependencies. This paper investigates Monte Carlo Simulation for project deadline forecasting within the framework of Measurement Governance and Victor Basili's Goal-Question-Metric (GQM) approach, compliant with the ISO/IEC/IEEE 15939 standard. We review the physical and mathematical roots of the method developed in Los Alamos by Ulam, von Neumann, and Metropolis, illustrating irregular area estimation via rejection sampling and stochastic convergence $O(1/\sqrt{N})$. An empirical study is conducted using 10,000 non-parametric bootstrap iterations over 26 weeks of historical Throughput data (102 delivered items) from an agile team, comparing fixed-scope and dynamic scope creep scenarios. The findings confirm that commitments backed by stochastic percentiles (P85 and P95) provide auditable and statistically sound delivery forecasts.
+Schedule predictability in software engineering faces structural bottlenecks when relying on deterministic point estimates, such as hour summation or Story Points via Planning Poker, due to workflow variance and serial task dependencies. This paper investigates Monte Carlo Simulation for project deadline forecasting within the framework of Measurement Governance and Victor Basili's Goal-Question-Metric (GQM) approach, compliant with the ISO/IEC/IEEE 15939 standard. We review the physical and mathematical roots of the method developed in Los Alamos by Ulam, von Neumann, and Metropolis, illustrating irregular area estimation via rejection sampling and stochastic convergence $O(1/\sqrt{N})$. An empirical study is conducted using 10,000 non-parametric bootstrap iterations over 26 weeks of historical Throughput data (102 delivered items) from an agile team, comparing fixed-scope and dynamic scope creep scenarios, with a TypeScript engine cross-checked against the renewal-process Central Limit Theorem. A rolling backtest over 572 merged pull requests from the large open-source repository `nestjs/nest` (52 weeks) shows that, in the stationary period, the P85 commitment held in 83.3% of windows, the median in 50.0%, and average-based projection (velocity logic) in only 41.7%. The findings confirm that commitments backed by stochastic percentiles (P85 and P95) provide auditable and statistically sound delivery forecasts.
 
-Keywords: Monte Carlo Simulation. Software Estimation. Throughput. Measurement Governance. GQM Model. ISO 15939. Agile Forecasting.
+Keywords: Monte Carlo Simulation. Software Estimation. Throughput. Backtesting. Measurement Governance. GQM Model. ISO 15939. Agile Forecasting.
 
 # Introdução
 
@@ -35,6 +35,13 @@ Nesse contexto, a Unidade VI do componente curricular de Engenharia de Software 
 A Simulação de Monte Carlo surge como a solução matematicamente sólida para superar as limitações das estimativas subjetivas [@magennis2011; @vacanti2015]. Ao invés de demandar estimativas antecipadas e especulativas sobre a complexidade intrínseca de cada item de backlog, o método estocástico utiliza o registro histórico da vazão real entregue (*Throughput*) para simular dezenas de milhares de trajetórias futuras possíveis [@siderova2020]. A resposta obtida não é uma data única ilusória, mas uma distribuição cumulativa de probabilidades que permite quantificar os níveis de risco associados a cada prazo de entrega [@day2019; @fatto2021].
 
 O objetivo deste artigo é formalizar a aplicação da Simulação de Monte Carlo para a previsão de prazos em projetos de software sob a ótica da governança de métricas. O trabalho estabelece as conexões entre a gênese físico-matemática da simulação e sua transposição para os sistemas sócio-técnicos de engenharia de software, estrutura o plano de coleta e análise por meio do modelo GQM em conformidade com a norma ISO/IEC/IEEE 15939, implementa um experimento computacional com dados empíricos de 26 semanas e analisa criticamente as implicações estratégicas na negociação de contratos e acordos de nível de serviço (SLA).
+
+As contribuições específicas deste trabalho são quatro:
+
+1. Um motor de simulação reprodutível em TypeScript, com semente fixa e 15 testes automatizados, que reproduz os percentis das implementações de referência `rodbv/quando` e `thawkin3` [@rodbv2023; @thawkin2022];
+2. A conferência dos resultados simulados por uma fórmula fechada (Teorema Central do Limite para processos de renovação), que permite ao gestor estimar o P85 em uma calculadora antes de rodar a simulação [@ross1996];
+3. A quantificação da precisão da própria simulação pela desigualdade de Dvoretzky-Kiefer-Wolfowitz, justificando o número de iterações utilizado [@dkw1956; @massart1990];
+4. Uma curadoria comparativa de implementações abertas e um *backtest* com dados reais de um projeto de grande porte (`nestjs/nest`), avaliando quantas vezes cada tipo de compromisso teria sido cumprido de fato [@nestjs2026].
 
 # Fundamentação Teórico-Matemática
 
@@ -112,6 +119,42 @@ P(\text{Sucesso}) = (0,75)^{10} \approx 0,0563 \quad (5,63\%)
 
 Esse cálculo formal elucida a armadilha do determinismo: embora o analista acredite estar estabelecendo prazos com 75% de confiança em cada item, o projeto como um todo apresenta 94,37% de probabilidade de atraso [@day2019].
 
+## Aproximação Analítica: o Teorema Central do Limite para Processos de Renovação
+
+Embora a simulação dispense hipóteses sobre a forma da distribuição, existe uma fórmula fechada que serve como conferência independente dos resultados. Seja $T_w$ o throughput da semana $w$, com média $\mu$ e variância $\sigma^2$, e seja $B$ o backlog. O prazo $D$ é o primeiro instante em que a soma acumulada das entregas alcança o backlog:
+
+```latex
+\begin{equation}
+D = \min \left\{ t : \sum_{w=1}^{t} T_w \ge B \right\}
+\end{equation}
+```
+
+Pela teoria de processos de renovação [@ross1996], para $B$ grande o prazo é aproximadamente normal, com média $B/\mu$ e variância $B\sigma^2/\mu^3$. Somando meia semana de correção pela contagem em semanas inteiras, obtém-se:
+
+```latex
+\begin{equation}
+D \approx \mathcal{N}\left( \frac{B}{\mu} + \frac{1}{2} ,\; \frac{B\,\sigma^2}{\mu^3} \right)
+\qquad \Rightarrow \qquad
+P_{85} \approx \frac{B}{\mu} + \frac{1}{2} + 1{,}036 \sqrt{\frac{B\,\sigma^2}{\mu^3}}
+\end{equation}
+```
+
+Em que $1,036$ é o quantil de 85% da normal padrão (para o P95, usa-se $1,645$). A fórmula evidencia duas propriedades gerenciais relevantes. A primeira é que a incerteza cresce com $\sqrt{B}$, e não com $B$: dobrar o backlog aumenta o prazo médio em 100%, mas a folga de segurança em apenas cerca de 41%. A segunda é que o *Scope Creep* entra de forma natural, bastando substituir $\mu$ pela vazão líquida $\mu - \lambda$ e somar a variância das chegadas, $\sigma^2 + \sigma_\lambda^2$, em que $\lambda$ é a taxa média de itens novos por semana.
+
+## Precisão da Própria Simulação: Erro Padrão e Desigualdade DKW
+
+Toda simulação é, ela mesma, uma estimativa. Duas ferramentas quantificam quanto o resultado varia por causa do sorteio. A média dos prazos simulados tem erro padrão $\sigma_D/\sqrt{N}$, em que $N$ é o número de iterações. Para a Curva S inteira, a desigualdade de Dvoretzky-Kiefer-Wolfowitz (DKW), com a constante ótima demonstrada por Massart [@dkw1956; @massart1990], garante que a função de distribuição empírica $\hat{F}_N$ se afasta da verdadeira $F$ em no máximo $\varepsilon$, em todos os pontos simultaneamente, com confiança $1-\alpha$:
+
+```latex
+\begin{equation}
+P\left( \sup_{t} \left| \hat{F}_N(t) - F(t) \right| > \varepsilon \right) \le 2\, e^{-2N\varepsilon^2}
+\qquad \Rightarrow \qquad
+\varepsilon = \sqrt{\frac{\ln(2/\alpha)}{2N}}
+\end{equation}
+```
+
+Com $N = 10.000$ e $\alpha = 0,05$, obtém-se $\varepsilon \approx 1,36$ ponto percentual: quando a Curva S indica 85% de chance, o valor verdadeiro está entre 83,6% e 86,4% com 95% de confiança. Com apenas $N = 1.000$, a margem sobe para 4,29 pontos percentuais. Para garantir margem de 1 ponto percentual seriam necessárias 18.445 iterações. Esse cálculo justifica objetivamente a escolha de 10.000 rodadas, em vez de tratá-la como um número mágico. Ressalta-se que essa margem mede apenas o erro do sorteio; o erro decorrente de um histórico pouco representativo do futuro não diminui com mais iterações, como discutido na seção de premissas de validade.
+
 ## Métricas de Fluxo Contínuo e a Lei de Little
 
 A alternativa metodológica sólida repousa nas métricas do fluxo de valor originadas no Sistema Toyota de Produção e adaptadas para o contexto do Kanban e do Scrum por Anderson [@anderson2010] e Vacanti [@vacanti2015]. O processo produtivo de software é caracterizado por três grandezas fundamentais:
@@ -170,13 +213,31 @@ O processo implementado atende rigorosamente às diretrizes da norma ISO/IEC/IEE
 - Os procedimentos analíticos de bootstrapping sejam transparentes, reprodutíveis e apoiados em algoritmos públicos e bibliotecas de código aberto (`rodbv/quando` e `thawkin3/monte-carlo-simulation-project-timeline-estimator`) [@rodbv2023; @thawkin2022];
 - Os relatórios gerenciais declarem explicitamente o nível de risco associado a cada percentil de probabilidade, prevenindo a falsa segurança de previsões pontuais.
 
+# Panorama de Implementações Open-Source
+
+Antes de implementar o motor próprio, realizou-se uma curadoria de repositórios públicos no GitHub que aplicam Monte Carlo à previsão de entregas, priorizando projetos ativos e voltados a prazos. A busca revelou duas famílias distintas: simuladores didáticos baseados em CSV ou *notebooks*, úteis para entender o algoritmo, e plataformas operacionais integradas a ferramentas de gestão, voltadas ao uso diário por equipes. Não foram encontrados *forks* diretos entre eles; trata-se de implementações independentes que convergem para a mesma abordagem de *bootstrapping* do throughput histórico com leitura por percentis. A Tabela 2 resume a curadoria (dados de atividade consultados em 18 nov. 2026).
+
+Tabela: Curadoria de implementações open-source de Monte Carlo para previsão de entregas
+| Projeto (autor) | Tecnologia e família | Entrada de dados | Perguntas respondidas |
+| --- | --- | --- | --- |
+| Kanban Monte Carlo Simulation (jabopiti) | Python, notebook didático | CSV de throughput | Quando? Quantos? |
+| Kanban Metrics (jsherer) | Python, notebook didático | Histórico do Jira | Quando? e curva de sobrevivência |
+| quando (rodbv) | Python, biblioteca | CSV com datas de início e fim | Quando? e SLE de cycle time |
+| Timeline Estimator (thawkin3) | TypeScript, aplicação web didática | Formulário com histórico | Quando? |
+| flowmetrics (dvhthomas) | Python, ferramenta de linha de comando | PRs e issues do GitHub, Jira | Quando? Quantos? métricas de fluxo |
+| Professional Kanban (ProKanban) | Python, assistente de IA | CSV exportado | SLE, idade dos itens, Quando? |
+| Capacity Planning and Feature Monte Carlo (nbrown02) | Power BI, plataforma | Jira e Azure DevOps | Quando cada funcionalidade fica pronta? |
+| Lighthouse (LetPeopleWork) | C#, plataforma | Jira, Azure DevOps, CSV, Linear (prévia) | Quando? Quantos? portfólio |
+
+Para fins de estudo, os projetos mais próximos da implementação deste trabalho são o Kanban Monte Carlo Simulation, o Kanban Metrics e o quando [@jabopiti2019; @jsherer2021; @rodbv2023], pois expõem o algoritmo em poucas linhas. Para uso operacional, o Lighthouse é a alternativa mais completa e ativa [@lighthouse2026], enquanto o Capacity Planning and Feature Monte Carlo atende organizações que já usam Jira ou Azure DevOps com Power BI [@nbrown2026]. Destaca-se ainda o flowmetrics [@dvhthomas2026], que extrai o throughput diretamente de *pull requests* do GitHub, mesma estratégia de coleta adotada no segundo estudo de caso deste artigo.
+
 # Estudo de Caso e Aplicação Prática
 
 A aplicação prática foi conduzida a partir do registro de entregas de uma equipe multidisciplinar de desenvolvimento de software ao longo de 26 semanas consecutivas de operação (correspondente a um semestre letivo completo).
 
 ## Coleta de Dados e Caracterização do Throughput Histórico
 
-A Tabela 2 apresenta o registro cronológico da vazão semanal da equipe, totalizando 102 itens de trabalho concluídos e homologados segundo a *Definition of Done*.
+A Tabela 3 apresenta o registro cronológico da vazão semanal da equipe, totalizando 102 itens de trabalho concluídos e homologados segundo a *Definition of Done*.
 
 Tabela: Histórico Semanal de Throughput (26 semanas consecutivas)
 | Semana | Vazão | Semana | Vazão |
@@ -204,7 +265,7 @@ Nota-se claramente que a distribuição não exibe perfil estritamente normal, a
 
 ## Algoritmo de Bootstrapping Não Paramétrico
 
-Para simular o tempo requerido para concluir um backlog de 60 itens novos priorizados, utilizou-se um algoritmo estocástico de *bootstrapping* não paramétrico implementado em Python [@rodbv2023]. O procedimento consiste em:
+Para simular o tempo requerido para concluir um backlog de 60 itens novos priorizados, utilizou-se um algoritmo estocástico de *bootstrapping* não paramétrico [@efron1979] implementado em TypeScript e executado com o *runtime* Bun, seguindo a mesma lógica de `rodbv/quando` [@rodbv2023]. O procedimento consiste em:
 
 1. Fixar o volume do backlog pendente $B_0 = 60$ itens;
 2. Para cada iteração $r \in \{1, 2, \dots, 10.000\}$:
@@ -216,6 +277,39 @@ Para simular o tempo requerido para concluir um backlog de 60 itens novos priori
    - Registrar as semanas necessárias na iteração $D_r = t$;
 3. Ordenar o vetor de desfechos simulados $[D_1, D_2, \dots, D_{10.000}]$ e calcular os percentis de confiança empíricos.
 
+O núcleo do algoritmo cabe em poucas linhas. O trecho a seguir é o laço principal do arquivo `src/monte-carlo.ts`; o gerador `criarRng` (Mulberry32) recebe uma semente fixa, o que torna cada execução reprodutível e auditável:
+
+```typescript
+export function simularQuando(
+  historico: number[],
+  opcoes: OpcoesQuando,
+): number[] {
+  const { backlog, iteracoes = 10_000, semente = 42, scopeCreep } = opcoes;
+  const rng = criarRng(semente);
+  const resultados = new Array<number>(iteracoes);
+  for (let r = 0; r < iteracoes; r++) {
+    let restante = backlog;
+    let semanas = 0;
+    while (restante > 0) {
+      semanas++;
+      // vazão sorteada com reposição
+      restante -= sortear(historico, rng);
+      // itens novos (scope creep)
+      if (scopeCreep) restante += sortearDiscreto(scopeCreep, rng);
+    }
+    resultados[r] = semanas;
+  }
+  return resultados;
+}
+```
+
+O prazo comprometível em cada nível de confiança é obtido pelo percentil com interpolação linear (equivalente ao `numpy.percentile`), arredondado para cima, pois não se promete fração de semana:
+
+```typescript
+export const semanasNoPercentil = (xs: number[], p: number) =>
+  Math.ceil(percentil(xs, p));
+```
+
 Para contemplar a dinâmica real de projetos, modelaram-se dois cenários comparativos:
 
 - **Cenário A (Escopo Fixo):** O backlog permanece congelado em exatamente 60 itens até a conclusão total;
@@ -223,14 +317,14 @@ Para contemplar a dinâmica real de projetos, modelaram-se dois cenários compar
 
 ## Resultados da Simulação
 
-A Tabela 3 consolida as métricas estatísticas geradas após a execução de 10.000 rodadas de simulação computacional para ambos os cenários.
+A Tabela 4 consolida as métricas estatísticas geradas após a execução de 10.000 rodadas de simulação computacional para ambos os cenários.
 
 Tabela: Resultados Estatísticos Comparativos da Simulação de Monte Carlo (10.000 rodadas)
 | Parâmetro Estatístico | Cenário A (Escopo Fixo) | Cenário B (Escopo Dinâmico) | Variação Absoluta |
 | --- | --- | --- | --- |
 | Tamanho Inicial do Backlog | 60 itens | 60 itens | 0 |
-| Média Aritmética de Prazos | 15,73 semanas | 18,85 semanas | +3,12 semanas |
-| Desvio Padrão Amostral | 1,50 semanas | 2,17 semanas | +0,67 semanas |
+| Média Aritmética de Prazos | 15,72 semanas | 18,77 semanas | +3,05 semanas |
+| Desvio Padrão Amostral | 1,48 semanas | 2,16 semanas | +0,68 semanas |
 | Percentil 50 (P50 - Mediana) | 16 semanas | 19 semanas | +3 semanas |
 | Percentil 75 (P75) | 17 semanas | 20 semanas | +3 semanas |
 | Percentil 85 (P85 - Compromisso) | 17 semanas | 21 semanas | +4 semanas |
@@ -248,25 +342,67 @@ A representação executiva de maior relevância gerencial é obtida por meio da
 
 A análise gráfica ilustra com clareza o deslocamento das curvas promovido pelo *Scope Creep*: para assegurar o mesmo nível de 85% de confiança de entrega, a presença de uma taxa média de acréscimo de 0,65 itens/semana posterga a data de entrega de 17 semanas para 21 semanas (acréscimo de 4 semanas de trabalho da equipe).
 
+A Tabela 5 confronta a simulação com a aproximação analítica do Teorema Central do Limite apresentada na fundamentação teórica. Para o Cenário B, utilizaram-se a vazão líquida $\mu - \lambda = 3,92 - 0,65 = 3,27$ itens por semana e a variância somada $\sigma^2 + \sigma_\lambda^2 = 2,22 + 0,53 = 2,75$, sendo $\sigma^2$ a variância populacional do histórico (o *bootstrap* trata a amostra como população).
+
+Tabela: Conferência da simulação (10.000 iterações) pela aproximação do Teorema Central do Limite
+| Grandeza | Cenário A simulado | Cenário A analítico | Cenário B simulado | Cenário B analítico |
+| --- | --- | --- | --- | --- |
+| Média do prazo | 15,72 semanas | 15,79 semanas | 18,77 semanas | 18,83 semanas |
+| Desvio padrão | 1,48 semanas | 1,46 semanas | 2,16 semanas | 2,14 semanas |
+| P85 | 17 semanas | 17,31 semanas | 21 semanas | 21,05 semanas |
+| P95 | 18 semanas | 18,20 semanas | 23 semanas | 22,35 semanas |
+
+A concordância, com diferenças inferiores a 0,1 semana na média e no desvio, cumpre um papel de governança: confirma que o código não contém erro de modelagem e oferece ao gestor uma conta de verificação rápida. A pequena diferença no P95 do Cenário B decorre da assimetria à direita da distribuição real, que a normal simétrica não captura; justamente nas caudas a simulação é superior à fórmula. O erro padrão de Monte Carlo da média no Cenário A é de $1,48/\sqrt{10.000} \approx 0,015$ semana, desprezível frente à incerteza do próprio processo.
+
+A mesma base histórica responde também à pergunta inversa, comum no planejamento trimestral: quantos itens cabem em um prazo fixo? Somando 12 semanas sorteadas em 10.000 iterações, obtém-se mediana de 47 itens; com 85% de confiança a equipe entrega pelo menos 42 itens, e com 95% pelo menos 39. Para escopo, o compromisso seguro é o percentil baixo da distribuição, ao contrário do prazo, em que se usa o percentil alto.
+
 A representação visual dinâmica do próprio processo de Monte Carlo é apresentada na Figura 5. O painel esquerdo exibe 80 trajetórias estocásticas individuais (*sample paths*) de descida do *backlog* de 60 itens até zero, acompanhadas da trajetória mediana (P50) e da faixa sombreada do Cone de Incerteza (delimitada entre os percentis P15 e P85). O painel direito documenta a convergência e a estabilidade dos percentis P50, P85 e P95 em função do volume amostral de simulações $N$ (de 20 a 10.000 iterações), evidenciando a estabilização assintótica a partir de $N \ge 1.000$ iterações conforme previsto pela Lei dos Grandes Números.
 
 ![Trajetórias estocásticas de burn-down e estabilidade dos percentis vs iterações](img/fig5_monte_carlo_trajetorias_convergencia.png)
 
 ## Validação e Equivalência com Bibliotecas Open-Source
 
-Para atestar o rigor operacional exigido pela governança da medição, o motor de simulação desenvolvido foi submetido a testes unitários automatizados de equivalência contra duas das principais implementações de código aberto disponíveis na comunidade de engenharia de software:
+Para atestar o rigor operacional exigido pela governança da medição, o motor foi submetido a 15 testes automatizados (`bun test`). Os testes de equivalência reimplementam, dentro da suíte, a lógica de laço e de cálculo de percentil de duas implementações abertas, e comparam os resultados com o motor próprio sob a mesma semente:
 
-1. **`rodbv/quando` (Python)** [@rodbv2023]: Biblioteca open-source voltada ao cálculo de *Service Level Expectations* (SLE) e previsibilidade ágil baseada em histórico de *Throughput*. O teste comparativo demonstrou 100% de convergência estatística com a função `Quando.forecast_days`, gerando idênticos percentis de risco ($P50 = 16$, $P85 = 17$ e $P95 = 18$ semanas);
-2. **`thawkin3` (TypeScript / Node)** [@thawkin2022]: Estimador estocástico web/CLI baseado em fluxo empírico (`monte-carlo-timeline-estimator`). Os testes unitários cruzados comprovaram que a amostragem não paramétrica com reposição produz distribuições perfeitamente compatíveis.
+1. **`rodbv/quando` (Python)** [@rodbv2023]: acumula entregas até alcançar o backlog, em vez de descontá-las até zero. O teste confirma que as duas formulações produzem vetores de resultados idênticos, iteração por iteração, e os mesmos percentis ($P50 = 16$, $P85 = 17$ e $P95 = 18$ semanas);
+2. **`thawkin3` (TypeScript)** [@thawkin2022]: lê o percentil pelo índice inteiro do vetor ordenado, sem interpolação. O teste confirma que essa leitura produz os mesmos três percentis.
 
-Tabela: Comparativo de Validação com Motores Open-Source de Monte Carlo (10.000 iterações)
+Além disso, os percentis do motor TypeScript coincidem com os do script Python original do projeto (que gera as Figuras 1 a 5), apesar de os dois usarem geradores aleatórios diferentes. Isso indica que o resultado reflete o histórico, e não um artefato do gerador.
 
+Tabela: Comparativo de validação com a lógica de motores open-source (10.000 iterações)
 | Métrica / SLE | Motor Próprio | `rodbv/quando` | `thawkin3` | Convergência |
 | :------------------ | :-----------: | :------------: | :--------: | :----------: |
 | Percentil 50 (P50)  | 16 semanas    | 16 semanas     | 16 semanas | 100% (exato) |
 | Percentil 85 (P85)  | 17 semanas    | 17 semanas     | 17 semanas | 100% (exato) |
 | Percentil 95 (P95)  | 18 semanas    | 18 semanas     | 18 semanas | 100% (exato) |
-| Amostragem          | Bootstrapping | Bootstrapping  | Aleatória  | Equivalente  |
+| Amostragem          | Bootstrapping | Bootstrapping  | Bootstrapping | Equivalente  |
+
+# Estudo de Caso 2: Projeto de Grande Porte
+
+O histórico de 26 semanas do primeiro estudo é adequado para fins didáticos, mas não permite verificar se as previsões teriam acertado. Para esse teste, escolheu-se o repositório `nestjs/nest` [@nestjs2026], *framework* de *back-end* em TypeScript amplamente adotado na indústria e alinhado à stack do autor. Cada *pull request* (PR) mergeado foi tratado como um item entregue, estratégia também adotada pelo flowmetrics [@dvhthomas2026].
+
+## Coleta e Higienização
+
+Os dados foram extraídos com a CLI oficial do GitHub (`gh pr list --state merged`), cobrindo de 17 nov. 2025 a 15 nov. 2026 (52 semanas). Seguindo a ISO/IEC/IEEE 15939, que exige que a medida represente o atributo de interesse [@iso15939], excluíram-se os PRs abertos por robôs de atualização de dependências (Renovate e Dependabot), que representavam 56% dos merges e não refletem capacidade da equipe. Restaram 572 PRs humanos, com média de 11,00 PRs por semana, desvio padrão de 15,02 e amplitude de 0 a 58. O desvio maior que a média já indica uma distribuição muito distante da normal, cenário em que médias e intervalos simétricos falham e o *bootstrapping* se mostra mais adequado.
+
+## Backtest Rolante
+
+O *backtest* simula o que um gestor teria previsto em cada momento do passado, usando apenas os dados disponíveis até então. Para cada janela, tomaram-se as 26 semanas anteriores como histórico, previu-se quantos PRs seriam entregues nas 6 semanas seguintes (10.000 iterações) e comparou-se com o valor efetivamente entregue. Avaliaram-se três formas de compromisso: o P85 da simulação (percentil 15 da distribuição de itens), a mediana da simulação e a projeção ingênua "média semanal vezes 6", que corresponde à lógica da *velocity*. Foram 21 janelas.
+
+A série revelou uma mudança de regime a partir da semana 44, quando a vazão média saltou de 4,98 para 39,78 PRs por semana, cerca de oito vezes mais. Como essa mudança viola a premissa de estacionariedade, os resultados são apresentados separadamente na Tabela 7.
+
+Tabela: Backtest rolante no nestjs/nest (proporção de janelas em que o compromisso foi cumprido)
+| Tipo de compromisso | Meta teórica | Período estável (12 janelas) | Todas as janelas (21) |
+| --- | --- | --- | --- |
+| P85 da simulação de Monte Carlo | 85% | 83,3% | 90,5% |
+| Mediana da simulação (P50) | 50% | 50,0% | 71,4% |
+| Média semanal vezes 6 (*velocity*) | não declarada | 41,7% | 66,7% |
+
+![Throughput semanal real do nestjs/nest e backtest rolante dos compromissos de entrega](img/fig6_nestjs_backtest.png)
+
+No período estável, os números aderem à teoria de forma notável: o P85 foi cumprido em 83,3% das janelas, muito próximo da meta de 85%, e a mediana em exatamente 50%, confirmando com dados reais que prometer o P50 equivale a lançar uma moeda. A projeção pela média, por sua vez, foi cumprida em apenas 41,7% das vezes, abaixo até da mediana. Isso ocorre porque as semanas excepcionais (como as semanas 14 e 15, com 16 e 25 PRs) puxam a média para cima, enquanto a maioria das semanas fica abaixo dela; é o *Flaw of Averages* de Savage observado em um projeto real [@savage2009].
+
+Quando se incluem as janelas posteriores à mudança de regime, todas as taxas sobem artificialmente, pois a equipe passou a entregar muito acima de qualquer previsão. O acerto de 90,5% do P85 nesse recorte não deve ser lido como mérito do modelo: ele mostra que, diante de uma mudança estrutural, a simulação baseada no passado perde validade, e o histórico precisa ser reiniciado a partir do novo regime.
 
 # Análise Crítica e Discussão
 
@@ -290,7 +426,7 @@ Recomenda-se como diretriz de governança coletar entre 20 e 30 observações hi
 
 Para que a Simulação de Monte Carlo produza previsões válidas e confiáveis, o processo de software deve satisfazer a premissas operacionais bem delimitadas:
 
-1. **Estacionariedade do Processo:** O comportamento futuro da equipe deve ser razoavelmente similar ao comportamento registrado no período histórico utilizado. Mudanças radicais na arquitetura tecnológica, rotatividade substancial de colaboradores ou alterações drásticas na política de testes invalidam a representatividade da base amostral;
+1. **Estacionariedade do Processo:** O comportamento futuro da equipe deve ser razoavelmente similar ao comportamento registrado no período histórico utilizado. Mudanças radicais na arquitetura tecnológica, rotatividade substancial de colaboradores ou alterações drásticas na política de testes invalidam a representatividade da base amostral. O estudo do `nestjs/nest` ilustra o caso concreto: após um salto de oito vezes na vazão, as previsões deixaram de ser calibradas. Como regra de governança, recomenda-se acompanhar a vazão em um gráfico de controle e descartar o histórico anterior quando uma mudança persistente for detectada;
 2. **Granularidade do Trabalho:** Os itens de backlog não precisam possuir exatamente o mesmo tamanho de esforço (visto que a simulação incorpora naturalmente a variação de tamanhos), porém não devem conter disparidades desproporcionais, a exemplo de épicos de meses misturados a tarefas triviais de minutos. A recomendação ágil reside na quebra de histórias até que representem parcelas testáveis e independentes de valor;
 3. **Controle Rigoroso do WIP:** A Lei de Little estabelece que o Throughput só permanece estável se o Trabalho em Progresso for delimitado. A proliferação desordenada de tarefas concorrentes alonga o Cycle Time e colapsa a vazão semanal, introduzindo variância espúria no sistema de medição.
 
@@ -300,22 +436,36 @@ A governança da medição em engenharia de software exige a substituição de e
 
 Neste artigo, demonstrou-se formalmente que somar médias individuais conduz à falácia das estimativas encadeadas, resultando em probabilidades reais de cumprimento de cronograma inferiores a 6% em cadeias de dependências sequenciais. Em contrapartida, ao estruturar o programa de medição segundo o modelo Goal-Question-Metric (GQM) e os requisitos da norma ISO/IEC/IEEE 15939, estabeleceu-se a vazão histórica (Throughput) como medida factual primária para a simulação de 10.000 futuros possíveis.
 
-O estudo experimental com 26 semanas de histórico evidenciou que a entrega de 60 itens atinge o nível padrão de 85% de confiança em 17 semanas sob escopo congelado, estendendo-se para 21 semanas quando se incorpora a dinâmica realista de expansão de escopo (*Scope Creep*). A visualização gerencial por meio da Curva S cumulativa viabiliza negociações transparentes entre engenharia e lideranças corporativas, capacitando os gestores a substituir promessas irrealistas de 50% de confiança por compromissos estocásticos auditáveis e resilientes.
+O estudo experimental com 26 semanas de histórico evidenciou que a entrega de 60 itens atinge o nível padrão de 85% de confiança em 17 semanas sob escopo congelado, estendendo-se para 21 semanas quando se incorpora a dinâmica realista de expansão de escopo (*Scope Creep*). A conferência pela fórmula do Teorema Central do Limite reproduziu média e desvio da simulação com diferença inferior a 0,1 semana, e a desigualdade DKW mostrou que 10.000 iterações limitam o erro da Curva S a cerca de 1,4 ponto percentual. No teste com dados reais do `nestjs/nest`, o compromisso P85 foi cumprido em 83,3% das janelas do período estável, enquanto a projeção pela média, equivalente à lógica da *velocity*, acertou apenas 41,7%. O mesmo estudo mostrou o limite do método: quando o processo muda de regime, o histórico precisa ser renovado.
+
+Como trabalhos futuros, sugerem-se a detecção automática de mudanças de regime na série de throughput, a ponderação de semanas recentes no sorteio e a comparação, nos mesmos dados, com previsões de Story Points de equipes que mantenham os dois registros.
+
+A visualização gerencial por meio da Curva S cumulativa viabiliza negociações transparentes entre engenharia e lideranças corporativas, capacitando os gestores a substituir promessas irrealistas de 50% de confiança por compromissos estocásticos auditáveis e resilientes.
 
 # Referências
 
 - [anderson2010] ANDERSON, David J. *Kanban: Successful Evolutionary Change for Your Technology Business*. Sequim: Blue Hole Press, 2010.
 - [basili1994] BASILI, Victor R.; CALDIERA, Gianluigi; ROMBACH, H. Dieter. The Goal Question Metric Approach. *Encyclopedia of Software Engineering*, v. 2, p. 528-532, 1994.
+- [nbrown2026] BROWN, Nick. *Capacity Planning and Feature Monte Carlo for Azure DevOps and Jira*. Repositório GitHub, 2026. Disponível em: https://github.com/nbrown02/Capacity-Planning-Feature-Monte-Carlo. Acesso em: 18 nov. 2026.
 - [cockburn2006] COCKBURN, Alistair. *Agile Software Development: The Cooperative Game*. 2. ed. Boston: Addison-Wesley, 2006.
 - [day2019] DAY, Benjamin. When Will It Be Done? Monte Carlo Forecasting Explained. *Benjamin Day Consulting*, Boston, 2019.
+- [dvhthomas2026] DVHTHOMAS (BitsByMe). *flowmetrics: Vacanti-style flow metrics and Monte Carlo forecasting from GitHub PR data*. Repositório GitHub, 2026. Disponível em: https://github.com/dvhthomas/flowmetrics. Acesso em: 18 nov. 2026.
+- [dkw1956] DVORETZKY, Aryeh; KIEFER, Jack; WOLFOWITZ, Jacob. Asymptotic Minimax Character of the Sample Distribution Function and of the Classical Multinomial Estimator. *The Annals of Mathematical Statistics*, v. 27, n. 3, p. 642-669, 1956.
+- [efron1979] EFRON, Bradley. Bootstrap Methods: Another Look at the Jackknife. *The Annals of Statistics*, v. 7, n. 1, p. 1-26, 1979.
 - [fatto2021] FATTO CONSULTORIA. *Simulação de Monte Carlo nas Estimativas de Projetos de Software*. Brasília: Fatto Consultoria e Sistemas, 2021.
 - [goodhart1975] GOODHART, Charles A. E. Problems of Monetary Management: The U.K. Experience. *Papers in Monetary Economics*, Sydney: Reserve Bank of Australia, v. 1, p. 1-22, 1975.
+- [thawkin2022] HAWKINS, Tyler. *Monte Carlo Simulation Project Timeline Estimator*. Repositório GitHub, 2022. Disponível em: https://github.com/thawkin3/monte-carlo-simulation-project-timeline-estimator. Acesso em: 18 nov. 2026.
 - [iso15939] INTERNATIONAL ORGANIZATION FOR STANDARDIZATION. *ISO/IEC/IEEE 15939: Systems and software engineering -- Measurement process*. Genebra: ISO, 2017.
+- [lighthouse2026] LET PEOPLE WORK. *Lighthouse: Flow metrics, predictability and Monte Carlo forecasting*. Repositório GitHub, 2026. Disponível em: https://github.com/LetPeopleWork/Lighthouse. Acesso em: 18 nov. 2026.
 - [little1961] LITTLE, John D. C. A Proof for the Queuing Formula: $L = \lambda W$. *Operations Research*, Catonsville: INFORMS, v. 9, n. 3, p. 383-387, 1961.
 - [magennis2011] MAGENNIS, Troy. *Forecasting and Simulating Software Development Projects: Effective Modeling of Kanban and Scrum Projects using Monte Carlo Simulation*. Seattle: Focused Objective, 2011.
+- [massart1990] MASSART, Pascal. The Tight Constant in the Dvoretzky-Kiefer-Wolfowitz Inequality. *The Annals of Probability*, v. 18, n. 3, p. 1269-1283, 1990.
 - [metropolis1949] METROPOLIS, Nicholas; ULAM, Stanislaw. The Monte Carlo Method. *Journal of the American Statistical Association*, v. 44, n. 247, p. 335-341, 1949.
-- [rodbv2023] RODBV. *Quando: Service Level Expectations and Monte Carlo Forecasting Library in Python*. Repositório GitHub, 2023. Disponível em: https://github.com/rodbv/quando. Acesso em: 18 nov. 2026.
+- [nestjs2026] NESTJS. *Nest: a progressive Node.js framework for building efficient and scalable server-side applications*. Repositório GitHub, 2026. Disponível em: https://github.com/nestjs/nest. Acesso em: 18 nov. 2026.
+- [ross1996] ROSS, Sheldon M. *Stochastic Processes*. 2. ed. New York: John Wiley and Sons, 1996.
 - [savage2009] SAVAGE, Sam L. *The Flaw of Averages: Why We Underestimate Risk in the Face of Uncertainty*. Hoboken: John Wiley and Sons, 2009.
+- [jsherer2021] SHERER, Jordan. *Kanban Metrics*. Repositório GitHub, 2021. Disponível em: https://github.com/jsherer/kanban-metrics. Acesso em: 18 nov. 2026.
 - [siderova2020] SIDEROVA, Sonya. Continuous Forecasting with Monte Carlo: Why Story Points Fail at Scale. *Agile Austin Conference*, Austin, 2020.
-- [thawkin2022] HAWKINS, Tyler. *Monte Carlo Simulation Project Timeline Estimator*. Repositório GitHub, 2022. Disponível em: https://github.com/thawkin3/monte-carlo-simulation-project-timeline-estimator. Acesso em: 18 nov. 2026.
+- [jabopiti2019] TIEDEMANN, Jacob Lueg. *Kanban Monte Carlo Simulation: How Many and When for a Kanban Flow with Jupyter Notebook*. Repositório GitHub, 2019. Disponível em: https://github.com/jabopiti/kanban-monte-carlo-simulation. Acesso em: 18 nov. 2026.
 - [vacanti2015] VACANTI, Daniel S. *When Will It Be Done? Lean-Agile Forecasting to Answer Your Customers' Most Important Question*. Boca Raton: ActionableAgile, 2015.
+- [rodbv2023] VIEIRA, Rodrigo. *Quando: Service Level Expectations and Monte Carlo Forecasting Library in Python*. Repositório GitHub, 2023. Disponível em: https://github.com/rodbv/quando. Acesso em: 18 nov. 2026.
