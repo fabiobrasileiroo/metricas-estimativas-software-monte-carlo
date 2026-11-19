@@ -191,6 +191,13 @@ html, body {
 .dica { font-size: 13px; color: var(--muted); }
 .progresso { position: fixed; top: 0; left: 0; height: 4px; background: var(--cyan); z-index: 60; width: 0; transition: width .3s; }
 
+/* Tela cheia: só o slide, sem barra, progresso nem cursor parado */
+body.cheia { background: var(--branco); }
+body.cheia .controls, body.cheia .progresso { display: none; }
+body.cheia .stage { inset: 0; }
+body.cheia .slide { border-radius: 0; box-shadow: none; }
+body.cheia.cursor-oculto, body.cheia.cursor-oculto * { cursor: none; }
+
 @page { size: 1920px 1080px; margin: 0; }
 @media print {
   html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
@@ -931,9 +938,28 @@ html, body {
   let atual = 0;
 
   function ajustar() {
-    const k = Math.min(innerWidth / 1920, (innerHeight - 56) / 1080);
+    const barra = document.body.classList.contains("cheia") ? 0 : 56;
+    const k = Math.min(innerWidth / 1920, (innerHeight - barra) / 1080);
     deck.style.transform = `translate(-50%, -50%) scale(${k})`;
   }
+
+  // Tela cheia (F, botão ou F11): esconde a interface e o cursor parado
+  let cursorTimer = 0;
+  function atualizarTelaCheia() {
+    const cheia = !!document.fullscreenElement || (innerHeight === screen.height && innerWidth === screen.width);
+    document.body.classList.toggle("cheia", cheia);
+    if (!cheia) document.body.classList.remove("cursor-oculto");
+    ajustar();
+  }
+  document.addEventListener("fullscreenchange", atualizarTelaCheia);
+  addEventListener("resize", atualizarTelaCheia);
+  addEventListener("mousemove", () => {
+    document.body.classList.remove("cursor-oculto");
+    clearTimeout(cursorTimer);
+    if (document.body.classList.contains("cheia")) cursorTimer = setTimeout(() => document.body.classList.add("cursor-oculto"), 2000);
+  });
+  // Clique no slide avança (útil em tela cheia, sem botões)
+  document.getElementById("deck").addEventListener("click", () => mostrar(atual + 1));
   function mostrar(i) {
     atual = Math.max(0, Math.min(slides.length - 1, i));
     slides.forEach((s, k) => s.classList.toggle("is-active", k === atual));
