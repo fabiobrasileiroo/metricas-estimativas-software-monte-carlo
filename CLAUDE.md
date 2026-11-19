@@ -6,7 +6,7 @@
 > - **Tema Principal Escolhido (Tema 7):** Simulação de Monte Carlo para Previsão de Prazos de Projetos de Software.
 > - **Docente:** Prof. Me. Alexsand Farias de Souza
 > - **Autor / Acadêmico:** Fábio Henrique Mendes Brasileiro ([@fabiobrasileiroo](https://github.com/fabiobrasileiroo))
-> - **Repositório Privado GitHub:** `https://github.com/fabiobrasileiroo/metricas-estimativas-software-monte-carlo`
+> - **Repositório GitHub (público):** `https://github.com/fabiobrasileiroo/metricas-estimativas-software-monte-carlo`
 
 ---
 
@@ -60,7 +60,7 @@ google-chrome-stable --headless=new --disable-gpu --no-pdf-header-footer \
   http://localhost:5179/apresentacao_simulacao_monte_carlo.html
 ```
 
-### 4. Atualizar o Repositório Privado no GitHub
+### 4. Atualizar o Repositório no GitHub
 ```bash
 git add .
 git commit -m "refactor: refinos no artigo e design system dos slides"
