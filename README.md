@@ -156,6 +156,21 @@ Os slides foram desenvolvidos adotando a estética consagrada pela palestrante i
 
 ---
 
+## 🟦 Motor TypeScript e Teste com Projeto Real (NestJS)
+
+O motor principal agora está em TypeScript (`src/monte-carlo.ts`, executado com Bun). Ele reproduz os percentis do Python (16/17/18 e 19/21/23 semanas) e acrescenta:
+
+- **Conferência analítica:** aproximação normal do Teorema Central do Limite para processos de renovação, `D ≈ N(B/μ + 1/2, Bσ²/μ³)`, que bate com a simulação em menos de 0,1 semana.
+- **Precisão da simulação:** desigualdade DKW, que limita o erro da Curva S a ±1,36 ponto percentual com 10.000 iterações.
+- **Pergunta inversa:** quantos itens cabem em 12 semanas (P85 ≥ 42 itens).
+- **Backtest com dados reais:** 572 PRs humanos mergeados do `nestjs/nest` em 52 semanas. No período estável, o compromisso P85 foi cumprido em 83,3% das janelas, a mediana em 50,0% e "média × semanas" em 41,7%.
+
+```bash
+bun install
+bun run simular   # grava resultados/resultados.json e .js (usado pelos slides)
+bun test          # 15 testes
+```
+
 ## 🚀 Como Executar Localmente
 
 ### 1. Pré-requisitos

@@ -3,1278 +3,969 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Simulação de Monte Carlo para Previsão de Prazos de Software - Apresentação Acadêmica Fábio Brasileiro">
-<title>Simulação de Monte Carlo — Previsão de Prazos</title>
+<meta name="description" content="Simulação de Monte Carlo para previsão de prazos de software — Fábio Brasileiro">
+<title>Simulação de Monte Carlo — previsão de prazos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Itim&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-@font-face {
-  font-family: 'Gaegu';
-  src: url('./fonts/Gaegu-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'Itim';
-  src: url('./fonts/Itim-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
+/* Fontes do design system Fábio Brasileiro (locais, funcionam offline) */
+@font-face { font-family: "Gaegu"; src: url("./fonts/Gaegu-Bold.ttf") format("truetype"); font-weight: 700; }
+@font-face { font-family: "Itim"; src: url("./fonts/Itim-Regular.ttf") format("truetype"); font-weight: 400; }
 
 :root {
   --ink: #1c1917;
   --cyan: #12a7c4;
-  --cyan-ring: rgba(18, 167, 196, 0.2);
-  --cyan-light: #e0f6fa;
   --cyan-dark: #0b7186;
+  --cyan-soft: #e3f6fa;
   --muted: #78716c;
   --paper: #fbfaf7;
   --branco: #ffffff;
   --line: #e7e2da;
-  --line-strong: #d4cec4;
   --camiseta: #1f2b47;
   --acai: #4a1d5c;
+  --acai-soft: #f3ecf6;
   --pele: #e8b897;
   --blush: #f08a9a;
-  --green: #10b981;
-  --green-light: #d1fae5;
-  --orange: #f59e0b;
-  --orange-light: #fef3c7;
-  --red: #ef4444;
-  --red-light: #fee2e2;
+  --alerta: #c2410c;
 
-  --font-gaegu: "Gaegu", cursive, sans-serif;
-  --font-hand: "Itim", cursive, sans-serif;
-  --font-text: "Nunito", system-ui, -apple-system, sans-serif;
-  --font-code: "JetBrains Mono", monospace;
+  /* Regra das frases: Gaegu (primária) sem acento, Itim (secundária) com acento */
+  --font-gaegu: "Gaegu", "Itim", cursive;
+  --font-hand: "Itim", cursive;
+  --font-text: "Nunito", system-ui, sans-serif;
+  --font-code: "JetBrains Mono", "JetBrainsMono Nerd Font", ui-monospace, monospace;
 
-  --radius-card: 16px;
+  --radius-card: 14px;
   --radius-pill: 999px;
-  --shadow-slide: 0 16px 40px -16px rgba(0, 0, 0, 0.12);
-  --shadow-card: 0 4px 16px -4px rgba(28, 25, 23, 0.06);
+  --shadow-slide: 0 16px 40px -16px rgba(0, 0, 0, 0.14);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 html, body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-text);
-  -webkit-font-smoothing: antialiased;
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-text); -webkit-font-smoothing: antialiased;
 }
 
-/* Palco 16:9 Centralizado */
-.stage {
-  position: fixed;
-  inset: 0 0 64px 0;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-
+/* Palco 16:9 */
+.stage { position: fixed; inset: 0 0 56px 0; }
 .deck {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1920px;
-  height: 1080px;
-  transform: translate(-50%, -50%) scale(0.65);
-  transform-origin: center center;
-  user-select: none;
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%) scale(0.6);
 }
-
-/* Slide Base */
 .slide {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background: var(--branco);
-  border: 1px solid var(--line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-slide);
   overflow: hidden;
   display: none;
-  opacity: 0;
-  transition: opacity 0.25s ease-out;
 }
+.slide.is-active { display: block; }
 
-.slide.is-active {
-  display: block;
-  opacity: 1;
+/* A fórmula: afirmação grande + ressalva ciano */
+.head { position: absolute; left: 110px; top: 72px; right: 520px; z-index: 5; }
+.titulo {
+  font-family: var(--font-hand); font-weight: 400;
+  font-size: 104px; line-height: 1; letter-spacing: -1px; color: var(--ink);
 }
+.ressalva { font-family: var(--font-hand); font-size: 48px; line-height: 1.15; color: var(--cyan); margin-top: 10px; }
+.sem-acento .titulo, .sem-acento .ressalva { font-family: var(--font-gaegu); font-weight: 700; }
+.sem-acento .titulo { font-size: 116px; }
+.sem-acento .ressalva { font-size: 54px; }
 
-/* Tipografia Lauren Tan / Fábio Brasileiro */
-.slide-header {
-  position: absolute;
-  left: 90px;
-  top: 60px;
-  right: 480px;
-  z-index: 10;
+.assinatura {
+  position: absolute; left: 110px; bottom: 54px; z-index: 5;
+  font-family: var(--font-hand); font-size: 34px; color: var(--ink);
 }
-
-.slide-title {
-  font-family: var(--font-hand);
-  font-size: 76px;
-  line-height: 1.02;
-  font-weight: 400;
-  color: var(--ink);
-  letter-spacing: -0.5px;
+.assinatura small {
+  font-family: var(--font-text); font-size: 17px; font-weight: 700;
+  color: var(--muted); margin-left: 16px; letter-spacing: .4px;
 }
-
-.slide-ressalva {
-  font-family: var(--font-hand);
-  font-size: 38px;
-  line-height: 1.15;
-  font-weight: 400;
-  color: var(--cyan);
-  margin-top: 6px;
+.avatar {
+  position: absolute; right: 30px; bottom: -20px; width: 470px;
+  mix-blend-mode: multiply; pointer-events: none; z-index: 4;
+  transform-origin: 50% 100%;
 }
+.avatar.sm { width: 330px; right: 10px; }
 
-/* Regra sem acento: Gaegu Bold primária */
-.slide.fb-sem-acento .slide-title,
-.slide.fb-sem-acento .slide-ressalva {
-  font-family: var(--font-gaegu);
-  font-weight: 700;
-}
-.slide.fb-sem-acento .slide-title { font-size: 82px; }
-.slide.fb-sem-acento .slide-ressalva { font-size: 42px; }
+/* Área de conteúdo */
+.body { position: absolute; left: 110px; right: 110px; top: 300px; bottom: 140px; z-index: 3; }
+.body.com-avatar { right: 520px; }
+.body.baixo { top: 340px; }
 
-/* Assinatura no Rodapé */
-.slide-footer-author {
-  position: absolute;
-  left: 90px;
-  bottom: 40px;
-  font-family: var(--font-hand);
-  font-size: 36px;
-  color: var(--ink);
-  z-index: 10;
-}
+.lede { font-size: 30px; line-height: 1.45; color: #44403c; max-width: 1100px; }
+.lede strong { color: var(--ink); }
+.nota { font-size: 20px; color: var(--muted); line-height: 1.5; }
+.hand { font-family: var(--font-hand); }
+.cyan { color: var(--cyan); }
+.acai { color: var(--acai); }
+.mono { font-family: var(--font-code); }
 
-.slide-footer-tag {
-  font-family: var(--font-text);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--muted);
-  margin-left: 14px;
-  letter-spacing: 0.5px;
-}
+.row { display: flex; gap: 36px; }
+.col { display: flex; flex-direction: column; gap: 22px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
 
-/* Personagem Chibi em Giz nos Cantos */
-.slide-avatar {
-  position: absolute;
-  right: 25px;
-  bottom: -15px;
-  width: 440px;
-  height: auto;
-  max-height: 520px;
-  object-fit: contain;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-  z-index: 20;
-}
-
-/* Área de Conteúdo do Slide */
-.slide-content {
-  position: absolute;
-  left: 90px;
-  top: 200px;
-  right: 460px;
-  bottom: 110px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  z-index: 10;
-}
-
-/* Layouts de Conteúdo */
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 36px;
-  align-items: center;
-  height: 100%;
-}
-
-.grid-2-wide-img {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 40px;
-  align-items: center;
-  height: 100%;
-}
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-  align-items: stretch;
-}
-
-/* Cartões de Conteúdo */
 .card {
-  background: var(--branco);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: 24px 28px;
-  box-shadow: var(--shadow-card);
+  background: var(--branco); border: 1.5px solid var(--line);
+  border-radius: var(--radius-card); padding: 26px 30px;
 }
+.card h3 { font-family: var(--font-hand); font-weight: 400; font-size: 32px; line-height: 1.15; margin-bottom: 10px; }
+.card p, .card li { font-size: 21px; line-height: 1.5; color: #44403c; }
+.card ul { margin-left: 22px; }
+.card.destaque { border-color: var(--cyan); box-shadow: 0 0 0 5px var(--cyan-soft); }
+.card.acai-b { border-color: var(--acai); box-shadow: 0 0 0 5px var(--acai-soft); }
 
-.card-title {
-  font-family: var(--font-hand);
-  font-size: 28px;
-  color: var(--ink);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.num { font-family: var(--font-hand); font-size: 92px; line-height: 1; color: var(--ink); }
+.num.cyan { color: var(--cyan); }
+.rotulo { font-size: 19px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
 
-.card-body {
-  font-size: 19px;
-  line-height: 1.5;
-  color: #374151;
-}
-
-.card-highlight {
-  border-left: 5px solid var(--cyan);
-  background: #fdfefe;
-}
-
-/* Imagens dos Gráficos */
-.chart-frame {
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  padding: 14px;
-  box-shadow: var(--shadow-card);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.chart-frame img {
-  width: 100%;
-  height: auto;
-  max-height: 570px;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-.chart-caption {
-  font-size: 15px;
-  color: var(--muted);
-  margin-top: 10px;
-  text-align: center;
-  font-family: var(--font-text);
-  font-weight: 600;
-}
-
-/* Pílulas e Badges */
 .pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: inline-block; padding: 7px 18px; border-radius: var(--radius-pill);
+  font-size: 17px; font-weight: 800; letter-spacing: .5px;
+  background: var(--cyan-soft); color: var(--cyan-dark);
 }
-.pill-cyan { background: var(--cyan-light); color: var(--cyan-dark); }
-.pill-green { background: var(--green-light); color: #065f46; }
-.pill-orange { background: var(--orange-light); color: #92400e; }
-.pill-red { background: var(--red-light); color: #991b1b; }
+.pill.acai { background: var(--acai-soft); color: var(--acai); }
 
-/* Blocos de Código estilo Terminal Clean */
-.code-box {
-  background: #181c24;
-  color: #e5e7eb;
-  border-radius: var(--radius-card);
-  padding: 22px 26px;
-  font-family: var(--font-code);
-  font-size: 16px;
-  line-height: 1.55;
-  box-shadow: 0 10px 25px -10px rgba(0,0,0,0.3);
-  border: 1px solid #2d3748;
+/* Terminal */
+.terminal {
+  background: #16181d; color: #e7e5e4; border-radius: var(--radius-card);
+  padding: 22px 30px 26px; font-family: var(--font-code); font-size: 21px; line-height: 1.6;
+  box-shadow: 0 18px 40px -18px rgba(0,0,0,.45);
 }
+.terminal .bar { display: flex; gap: 9px; margin-bottom: 16px; align-items: center; }
+.terminal .bar i { width: 13px; height: 13px; border-radius: 50%; background: #3f3f46; display: block; }
+.terminal .bar span { margin-left: 12px; color: #a8a29e; font-size: 16px; }
+.terminal pre { font-family: inherit; white-space: normal; }
+.terminal .ln { display: block; white-space: pre; padding: 0 8px; margin: 0 -8px; border-radius: 6px; }
+.terminal .ln.on { background: rgba(18, 167, 196, .22); }
+.kw { color: #f0abfc; } .fn { color: #7dd3fc; } .nm { color: #fcd34d; } .cm { color: #78716c; font-style: italic; } .st { color: #86efac; } .ty { color: #5eead4; }
 
-.code-box pre {
-  font-family: var(--font-code);
-  font-size: 16px;
-  line-height: 1.55;
-  white-space: pre;
-  margin: 0;
-  overflow-x: auto;
-}
+/* Gráficos */
+.chart { width: 100%; height: 100%; overflow: visible; }
+.chart text { font-family: var(--font-text); fill: var(--muted); font-size: 18px; font-weight: 600; }
+.chart .eixo { stroke: #d6d3d1; stroke-width: 1.5; }
+.chart .grade { stroke: #f0ede8; stroke-width: 1; }
+.chart .rotulo-g { font-family: var(--font-hand); font-size: 26px; font-weight: 400; }
+.legenda { display: flex; gap: 28px; font-size: 19px; font-weight: 700; color: #57534e; margin-top: 8px; }
+.legenda i { display: inline-block; width: 26px; height: 6px; border-radius: 3px; vertical-align: middle; margin-right: 8px; }
 
-.code-box .kw { color: #f472b6; font-weight: 600; }
-.code-box .fn { color: #60a5fa; }
-.code-box .str { color: #34d399; }
-.code-box .num { color: #fbbf24; }
-.code-box .cm { color: #9ca3af; font-style: italic; }
+/* Fórmula */
+.formula { font-family: var(--font-code); font-size: 38px; color: var(--ink); line-height: 1.5; }
+.formula .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 6px; font-size: 32px; }
+.formula .frac span:first-child { border-bottom: 3px solid var(--ink); padding: 0 6px; }
+.passo { font-family: var(--font-code); font-size: 30px; color: #44403c; }
+.passo b { color: var(--cyan-dark); }
 
-/* Tabela Comparativa de Paradigmas */
-.matrix-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  font-size: 18px;
+/* Tabela */
+.tabela { width: 100%; border-collapse: collapse; font-size: 22px; }
+.tabela th { text-align: left; font-family: var(--font-hand); font-weight: 400; font-size: 27px; padding: 14px 18px; border-bottom: 2px solid var(--ink); }
+.tabela td { padding: 15px 18px; border-bottom: 1px solid var(--line); color: #44403c; vertical-align: top; line-height: 1.4; }
+.tabela td:first-child { font-weight: 800; color: var(--ink); white-space: nowrap; }
+.tabela tr.mc td { background: var(--cyan-soft); }
+
+/* Corrente de dependências (0,75^10) */
+.corrente { display: flex; gap: 14px; align-items: center; }
+.elo {
+  width: 104px; height: 104px; border-radius: 18px; border: 3px solid var(--ink);
+  display: grid; place-items: center; font-family: var(--font-hand); font-size: 30px; background: var(--branco);
 }
 
-.matrix-table th {
-  background: #f4f3ef;
-  color: var(--ink);
-  font-family: var(--font-hand);
-  font-size: 22px;
-  padding: 16px 20px;
-  text-align: left;
-  border-bottom: 2px solid var(--line-strong);
+/* Barra inferior */
+.controls {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 56px;
+  background: var(--branco); border-top: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 50;
 }
-
-.matrix-table td {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-  color: #374151;
-  vertical-align: middle;
+.controls .grupo { display: flex; gap: 10px; align-items: center; }
+.btn {
+  background: var(--branco); border: 1px solid var(--line); color: var(--ink);
+  padding: 7px 16px; border-radius: var(--radius-pill);
+  font: 700 14px var(--font-text); cursor: pointer;
 }
+.btn:hover { background: var(--ink); color: var(--branco); }
+.contador { font-family: var(--font-hand); font-size: 22px; min-width: 70px; text-align: center; }
+.dica { font-size: 13px; color: var(--muted); }
+.progresso { position: fixed; top: 0; left: 0; height: 4px; background: var(--cyan); z-index: 60; width: 0; transition: width .3s; }
 
-.matrix-table tr:last-child td { border-bottom: none; }
-.matrix-table tr:nth-child(even) td { background: #faf9f6; }
-.matrix-table .tag-old { color: #b91c1c; font-weight: 700; }
-.matrix-table .tag-new { color: #047857; font-weight: 700; }
-
-/* Barra de Controles Inferior */
-.controls-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 64px;
-  background: var(--branco);
-  border-top: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  z-index: 100;
-}
-
-.btn-ctrl {
-  background: var(--branco);
-  border: 1px solid var(--line);
-  color: var(--ink);
-  padding: 8px 18px;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-text);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.15s ease;
-}
-
-.btn-ctrl:hover {
-  background: var(--ink);
-  color: var(--branco);
-  border-color: var(--ink);
-}
-
-.slide-counter {
-  font-family: var(--font-hand);
-  font-size: 22px;
-  color: var(--ink);
-  letter-spacing: 0.5px;
-}
-
-/* Barra de Progresso no Topo */
-.progress-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: rgba(0,0,0,0.04);
-  z-index: 200;
-}
-
-.progress-bar {
-  height: 100%;
-  background: var(--cyan);
-  width: 10%;
-  transition: width 0.3s ease;
-}
-
-/* Modo Visão Geral (Overview) */
-.overview-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(28, 25, 23, 0.85);
-  backdrop-filter: blur(8px);
-  z-index: 300;
-  overflow-y: auto;
-  padding: 50px 30px;
-}
-
-.overview-modal.is-open { display: block; }
-
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.overview-card {
-  background: var(--branco);
-  border-radius: 12px;
-  padding: 16px;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.overview-card:hover, .overview-card.is-active {
-  border-color: var(--cyan);
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-
-.overview-num {
-  font-family: var(--font-hand);
-  font-size: 20px;
-  color: var(--cyan);
-}
-
-.overview-title {
-  font-family: var(--font-hand);
-  font-size: 22px;
-  color: var(--ink);
-  margin-top: 6px;
-}
-
-/* ========================================================================== */
-/* IMPRESSÃO / PDF: 1 Slide 1920x1080 Exato por Página                        */
-/* ========================================================================== */
-@page {
-  size: 1920px 1080px;
-  margin: 0;
-}
-
+@page { size: 1920px 1080px; margin: 0; }
 @media print {
-  html, body {
-    width: 1920px !important;
-    height: auto !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-  }
-  .controls-bar, .progress-container, .overview-modal {
-    display: none !important;
-  }
-  .stage, .deck {
-    position: static !important;
-    transform: none !important;
-    width: 1920px !important;
-    height: auto !important;
-    display: block !important;
-  }
+  html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+  .controls, .progresso { display: none !important; }
+  .stage, .deck { position: static !important; transform: none !important; width: 1920px; height: auto; }
   .slide {
-    position: relative !important;
-    width: 1920px !important;
-    height: 1080px !important;
-    display: block !important;
-    opacity: 1 !important;
-    page-break-after: always !important;
-    break-after: page !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+    position: relative !important; display: block !important;
+    width: 1920px; height: 1080px; border-radius: 0; box-shadow: none;
+    break-after: page;
   }
+  /* No PDF tudo aparece no estado final, sem depender da animação */
+  .slide * { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .slide .avatar { transform: none !important; }
 }
+@media (prefers-reduced-motion: reduce) { .progresso { transition: none; } }
 </style>
 </head>
 <body>
-
-<div class="progress-container">
-  <div class="progress-bar" id="progressBar"></div>
-</div>
+<div class="progresso" id="progresso"></div>
 
 <div class="stage">
-  <div class="deck" id="deck">
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 1: Capa (Com Acento -> Itim)                                  -->
-    <!-- =================================================================== -->
-    <section class="slide is-active" data-index="1">
-      <div class="slide-header">
-        <h1 class="slide-title">previsão de prazos com monte carlo</h1>
-        <div class="slide-ressalva">(porque estimar em horas é puro palpite)</div>
-      </div>
-
-      <div class="slide-content" style="top: 240px;">
-        <div style="max-width: 960px; margin-bottom: 35px;">
-          <p style="font-size: 26px; line-height: 1.4; color: #4b5563; font-weight: 600;">
-            Governança da Medição, Modelo GQM e Análise Estocástica de Incertezas na Engenharia de Software
-          </p>
-          <div style="display: flex; gap: 12px; margin-top: 18px;">
-            <span class="pill pill-cyan">Engenharia de Software</span>
-            <span class="pill pill-cyan">Turma ENGS231N01</span>
-            <span class="pill pill-orange">Tema 7 • Monte Carlo</span>
-          </div>
-        </div>
-
-        <div class="grid-3" style="max-width: 1080px;">
-          <div class="card card-highlight">
-            <div style="font-family: var(--font-hand); font-size: 46px; font-weight: 700; color: var(--ink);">10.000</div>
-            <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Rodadas Computadas</div>
-            <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">Simulação não paramétrica de futuros possíveis via bootstrapping.</p>
-          </div>
-          <div class="card card-highlight">
-            <div style="font-family: var(--font-hand); font-size: 46px; font-weight: 700; color: var(--ink);">26 Semanas</div>
-            <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Throughput Real</div>
-            <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">102 itens entregues e homologados na Definition of Done.</p>
-          </div>
-          <div class="card card-highlight">
-            <div style="font-family: var(--font-hand); font-size: 46px; font-weight: 700; color: var(--ink);">P85 &amp; P95</div>
-            <div style="font-size: 17px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Níveis de Certeza</div>
-            <p style="font-size: 15px; color: var(--muted); margin-top: 6px;">Acordos contratuais de SLA auditáveis matematicamente.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">
-        Fábio Henrique Mendes Brasileiro
-        <span class="slide-footer-tag">Prof. Me. Alexsand Farias de Souza • Tema 7</span>
-      </div>
-      <img class="slide-avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 2: O Problema das Estimativas (Com Acento -> Itim)            -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="2">
-      <div class="slide-header">
-        <h2 class="slide-title">a média é uma ilusão</h2>
-        <div class="slide-ressalva">(e a velocity mente com classe)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2">
-          <div class="card" style="border-left: 6px solid #ef4444;">
-            <div class="card-title" style="color: #b91c1c;">⚠️ O "Flaw of Averages" (Sam Savage)</div>
-            <p class="card-body">
-              Planos baseados em médias falham na metade dos casos. Se a velocidade média prevê entrega em 15 semanas, prometer essa data é apostar numa moeda não viciada: <strong>50% de probabilidade de atraso</strong>!
-            </p>
-            <div style="margin-top: 14px; padding: 12px; background: #fef2f2; border-radius: 8px; font-size: 16px; color: #991b1b;">
-              Médias aritméticas ignoram a assimetria e a cauda longa de gargalos de software.
-            </div>
-          </div>
-
-          <div class="card" style="border-left: 6px solid #f59e0b;">
-            <div class="card-title" style="color: #b45309;">⛓️ Falácia das Dependências em Série</div>
-            <p class="card-body">
-              Em cadeias de tarefas sequenciais, incertezas se multiplicam. Dez tarefas encadeadas com 75% de certeza individual resultam em:
-            </p>
-            <div style="font-family: var(--font-code); font-size: 22px; font-weight: 700; color: #b45309; margin: 12px 0; text-align: center;">
-              P(Total) = (0,75)¹⁰ = 5,6%
-            </div>
-            <p class="card-body" style="font-size: 16px;">
-              A equipe crê que o plano é sólido, mas a chance de entregar no prazo é de apenas 1 em 18!
-            </p>
-          </div>
-
-          <div class="card" style="border-left: 6px solid #8b5cf6;">
-            <div class="card-title" style="color: #6d28d9;">🎯 Lei de Goodhart nos Story Points</div>
-            <p class="card-body">
-              <em>"Quando uma métrica se torna meta, ela deixa de ser uma boa métrica."</em>
-              Exigir aumento de Velocity apenas inflaciona as pontuações no Planning Poker. A pontuação sobe, mas a quantidade de valor entregue permanece estagnada.
-            </p>
-          </div>
-
-          <div class="card" style="border-left: 6px solid var(--cyan);">
-            <div class="card-title" style="color: var(--cyan-dark);">💡 Onde os Outros Temas Falham</div>
-            <p class="card-body">
-              Planning Poker é votação subjetiva; Horas Homem ignoram filas; Velocity esconde a variabilidade.
-              <strong>Monte Carlo resolve isso:</strong> abandona o chute e simula diretamente o fluxo factual.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Tema 7 • Simulação de Monte Carlo</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 3: Física e Origem (Sem Acento -> Gaegu Bold)                 -->
-    <!-- =================================================================== -->
-    <section class="slide fb-sem-acento" data-index="3">
-      <div class="slide-header">
-        <h2 class="slide-title">do cassino ao software</h2>
-        <div class="slide-ressalva">(ulam jogava cartas em los alamos)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2-wide-img">
-          <div class="chart-frame">
-            <img src="./img/fig1_fisica_area_monte_carlo.png" alt="Método de Rejeição e Convergência de Monte Carlo">
-            <div class="chart-caption">Figura 1 — Amostragem por rejeição (área de π/4) e convergência assintótica O(1/√N)</div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div class="card">
-              <div class="card-title">⚛️ Projeto Manhattan (1946)</div>
-              <p class="card-body">
-                Concebido por Stanislaw Ulam, John von Neumann e Nicholas Metropolis em Los Alamos para resolver equações integro-diferenciais de difusão de nêutrons intratáveis analiticamente.
-              </p>
-            </div>
-
-            <div class="card">
-              <div class="card-title">🎯 Método de Rejeição (Hit-or-Miss)</div>
-              <p class="card-body">
-                Para calcular a área de um lago irregular ou quarto de círculo, sorteiam-se pontos uniformes em um retângulo circunscrito. A fração de pontos dentro do perímetro converge para a área exata.
-              </p>
-            </div>
-
-            <div class="card">
-              <div class="card-title">📈 Lei dos Grandes Números</div>
-              <p class="card-body">
-                O erro estatístico decai com taxa <strong>O(1/√N)</strong>. Com 10.000 iterações, a dispersão é amortecida e a distribuição empírica atinge precisão cirúrgica para previsões de engenharia.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Fundamentação Físico-Matemática</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 4: Governança & GQM (Com Acento -> Itim)                      -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="4">
-      <div class="slide-header">
-        <h2 class="slide-title">gqm: meça com propósito</h2>
-        <div class="slide-ressalva">(métrica sem pergunta é só vaidade no dashboard)</div>
-      </div>
-
-      <div class="slide-content">
-        <div style="display: flex; flex-direction: column; gap: 22px;">
-          <!-- Nível 1: Meta -->
-          <div class="card" style="border: 2px solid var(--ink); background: #faf9f6;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span class="pill pill-cyan">Nível Conceitual • Goal (Meta)</span>
-              <span style="font-size: 14px; font-weight: 700; color: var(--muted);">ISO/IEC/IEEE 15939</span>
-            </div>
-            <p style="font-size: 24px; font-family: var(--font-hand); color: var(--ink); margin-top: 10px;">
-              "Prever prazos e dimensionar a capacidade de entrega da release com respaldo estatístico auditável, mitigando riscos de estouro de cronograma e descumprimento de SLA."
-            </p>
-          </div>
-
-          <!-- Nível 2 & 3: Perguntas e Métricas -->
-          <div class="grid-3">
-            <div class="card" style="border-top: 5px solid #3b82f6;">
-              <div style="font-weight: 700; color: #1d4ed8; font-size: 15px;">PERGUNTA 1 (Q1)</div>
-              <div style="font-family: var(--font-hand); font-size: 21px; margin: 8px 0; color: var(--ink);">
-                Qual a vazão histórica real entregue pela equipe?
-              </div>
-              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
-                <span class="pill pill-cyan" style="font-size: 12px;">Métrica Primária (M1)</span>
-                <p style="font-size: 16px; margin-top: 6px; color: #4b5563;">
-                  Histórico de <strong>Throughput semanal</strong> (26 semanas, 102 itens homologados na DoD).
-                </p>
-              </div>
-            </div>
-
-            <div class="card" style="border-top: 5px solid #10b981;">
-              <div style="font-weight: 700; color: #047857; font-size: 15px;">PERGUNTA 2 (Q2)</div>
-              <div style="font-family: var(--font-hand); font-size: 21px; margin: 8px 0; color: var(--ink);">
-                Qual a probabilidade de concluir 60 itens até cada semana?
-              </div>
-              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
-                <span class="pill pill-green" style="font-size: 12px;">Métrica Derivada (M2)</span>
-                <p style="font-size: 16px; margin-top: 6px; color: #4b5563;">
-                  Distribuição cumulativa de <strong>10.000 iterações</strong> com percentis P50, P85 e P95.
-                </p>
-              </div>
-            </div>
-
-            <div class="card" style="border-top: 5px solid #f59e0b;">
-              <div style="font-weight: 700; color: #b45309; font-size: 15px;">PERGUNTA 3 (Q3)</div>
-              <div style="font-family: var(--font-hand); font-size: 21px; margin: 8px 0; color: var(--ink);">
-                Qual o impacto do Scope Creep no cumprimento do prazo?
-              </div>
-              <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line);">
-                <span class="pill pill-orange" style="font-size: 12px;">Métrica de Risco (M3)</span>
-                <p style="font-size: 16px; margin-top: 6px; color: #4b5563;">
-                  <strong>Delta semanas</strong> no percentil P85 entre escopo fixo e dinâmico com descoberta.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Governança da Medição • Modelo GQM</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 5: Dado Primário Throughput (Com Acento -> Itim)              -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="5">
-      <div class="slide-header">
-        <h2 class="slide-title">conte itens concluídos</h2>
-        <div class="slide-ressalva">(throughput não aceita debate filosófico)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2-wide-img">
-          <div class="chart-frame">
-            <img src="./img/fig2_throughput_historico.png" alt="Distribuição Histórica do Throughput Semanal">
-            <div class="chart-caption">Figura 2 — Vazão semanal empírica de 26 semanas (102 itens homologados)</div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 18px;">
-            <div class="card">
-              <div class="card-title">📊 Estatística Descritiva Real</div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
-                <div style="background: #f3f4f6; padding: 10px 14px; border-radius: 8px;">
-                  <div style="font-size: 13px; color: var(--muted); font-weight: 700;">MÉDIA SEMANAL</div>
-                  <div style="font-size: 26px; font-weight: 700; color: var(--ink);">3,92 itens</div>
-                </div>
-                <div style="background: #f3f4f6; padding: 10px 14px; border-radius: 8px;">
-                  <div style="font-size: 13px; color: var(--muted); font-weight: 700;">DESVIO PADRÃO</div>
-                  <div style="font-size: 26px; font-weight: 700; color: var(--ink);">1,49 itens</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-title">⚡ A Realidade do Fluxo</div>
-              <p class="card-body">
-                A vazão oscila entre <strong>1 e 7 itens/semana</strong>. O sistema absorve imprevistos reais: feriados, bugs em produção, débito técnico e impedimentos de infraestrutura.
-              </p>
-            </div>
-
-            <div class="card" style="border-left: 5px solid #10b981;">
-              <div class="card-title" style="color: #047857;">💎 Vantagem sobre Story Points</div>
-              <p class="card-body">
-                Throughput é <strong>factual e auditável</strong> no git/Kanban. Não exige reuniões cansativas de Planning Poker e elimina discussões subjetivas sobre "se uma história vale 3 ou 5 pontos".
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Throughput Empírico da Equipe</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 6: Open Source & Algoritmo (Com Acento -> Itim)               -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="6">
-      <div class="slide-header">
-        <h2 class="slide-title">leia o código-fonte</h2>
-        <div class="slide-ressalva">(a lógica do open source cabe em vinte linhas)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2">
-          <div class="code-box">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #374151;">
-              <span style="color: #93c5fd; font-size: 14px;">monte_carlo.py (rodbv/quando &amp; thawkin3)</span>
-              <span style="color: #9ca3af; font-size: 14px;">Python 3.12+ / NumPy</span>
-            </div>
-            <pre><code><span class="kw">import</span> random, numpy <span class="kw">as</span> np
-
-<span class="kw">def</span> <span class="fn">simular_monte_carlo</span>(historico, backlog=<span class="num">60</span>, runs=<span class="num">10000</span>):
-    semanas = np.zeros(runs, dtype=int)
-    <span class="kw">for</span> i <span class="kw">in</span> range(runs):
-        restante, t = backlog, <span class="num">0</span>
-        <span class="kw">while</span> restante &gt; <span class="num">0</span>:
-            t += <span class="num">1</span>
-            <span class="cm"># Amostra com reposição do histórico factual</span>
-            vazao = random.choice(historico)
-            restante -= vazao
-        semanas[i] = t
-    <span class="kw">return</span> {
-        <span class="str">'P50'</span>: np.percentile(semanas, <span class="num">50</span>),
-        <span class="str">'P85'</span>: np.percentile(semanas, <span class="num">85</span>),
-        <span class="str">'P95'</span>: np.percentile(semanas, <span class="num">95</span>),
-    }</code></pre>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="card" style="border-left: 5px solid #10b981;">
-              <div class="card-title" style="color: #047857;">🌐 Benchmark Open Source Validado</div>
-              <ul style="margin-left: 20px; font-size: 16px; line-height: 1.5; color: #374151;">
-                <li><strong>rodbv/quando</strong> (Python): Testado via suíte automatizada — 0% de divergência nos percentis P50, P85 e P95.</li>
-                <li><strong>thawkin3/monte-carlo</strong> (TypeScript): Algoritmo de amostragem iterativa reproduzido e validado com 10.000 iterações.</li>
-                <li><strong>Troy Magennis / FocusedObjective</strong>: Princípios estatísticos alinhados aos padrões da Agile Alliance.</li>
-              </ul>
-            </div>
-
-            <div class="card">
-              <div class="card-title">🎲 Bootstrapping Não Paramétrico</div>
-              <p class="card-body">
-                Sorteia-se com reposição a vazão semanal diretamente do vetor empírico. <strong>Não força Gaussiana artificial</strong>: assimetrias, bloqueios e feriados reais do passado são preservados nas previsões futuras.
-              </p>
-            </div>
-
-            <div class="card" style="border-left: 5px solid var(--cyan);">
-              <div class="card-title" style="color: var(--cyan-dark);">⚡ Desempenho Computacional</div>
-              <p class="card-body">
-                Com vetorização NumPy, <strong>10.000 iterações</strong> rodam em ~0,3 segundos. Previsões estocásticas podem rodar automaticamente no pipeline de CI/CD a cada merge!
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Engenharia Open Source &amp; Algoritmo</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 7: Representação Visual no Gráfico (Com Acento -> Itim)       -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="7">
-      <div class="slide-header">
-        <h2 class="slide-title">como funciona no gráfico</h2>
-        <div class="slide-ressalva">(cem caminhos e um cone de incerteza)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2-wide-img">
-          <div class="chart-frame">
-            <img src="./img/fig5_monte_carlo_trajetorias_convergencia.png" alt="Trajetórias de Monte Carlo e Convergência Estocástica">
-            <div class="chart-caption">Figura 5 — Trajetórias estocásticas de burn-down (60 itens) e estabilidade dos percentis vs iterações (N)</div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="card" style="border-left: 5px solid #3b82f6;">
-              <div class="card-title" style="color: #1d4ed8;">📉 Trajetórias de Burn-down</div>
-              <p class="card-body">
-                Cada linha azul fina representa <strong>um futuro possível simulado</strong> descendo de 60 até 0 itens. A cada semana, o backlog é consumido conforme o Throughput real sorteado.
-              </p>
-            </div>
-
-            <div class="card" style="border-left: 5px solid #f59e0b;">
-              <div class="card-title" style="color: #b45309;">🎯 Cone de Incerteza (P15 – P85)</div>
-              <p class="card-body">
-                A área sombreada delimita o afunilamento de risco. A grande maioria dos futuros converge para a entrega entre as semanas <strong>15 e 18</strong>, estabelecendo a janela segura.
-              </p>
-            </div>
-
-            <div class="card" style="border-left: 5px solid #10b981;">
-              <div class="card-title" style="color: #047857;">📊 Por que 10.000 Rodadas?</div>
-              <p class="card-body">
-                O painel direito comprova a Lei dos Grandes Números: com amostras pequenas (<em>N</em> &lt; 100), as previsões oscilam; a partir de <em>N</em> ≥ 1.000, os percentis P50, P85 e P95 estabilizam em <strong>16, 17 e 18 semanas</strong>.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Representação Visual do Processo Estocástico</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 8: Histograma de Prazos (Com Acento -> Itim)                  -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="8">
-      <div class="slide-header">
-        <h2 class="slide-title">p50 é cara ou coroa</h2>
-        <div class="slide-ressalva">(assuma compromissos com o p85)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2-wide-img">
-          <div class="chart-frame">
-            <img src="./img/fig3_monte_carlo_prazos_histograma.png" alt="Histograma de Prazos de Monte Carlo">
-            <div class="chart-caption">Figura 3 — Histograma de semanas para concluir 60 itens (10.000 rodadas de Monte Carlo)</div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="card" style="border-left: 6px solid #10b981;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="card-title" style="color: #047857; margin-bottom: 0;">P50 (Mediana)</span>
-                <span style="font-family: var(--font-hand); font-size: 32px; font-weight: 700; color: #047857;">16 Semanas</span>
-              </div>
-              <p class="card-body" style="font-size: 16px; margin-top: 6px;">
-                50% das simulações entregaram até aqui. Mas 50% atrasaram! Prometer o P50 a clientes corporativos é pura roleta russa.
-              </p>
-            </div>
-
-            <div class="card" style="border-left: 6px solid #f59e0b; background: #fffdfa;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="card-title" style="color: #b45309; margin-bottom: 0;">P85 (Compromisso Ágil)</span>
-                <span style="font-family: var(--font-hand); font-size: 32px; font-weight: 700; color: #b45309;">17 Semanas</span>
-              </div>
-              <p class="card-body" style="font-size: 16px; margin-top: 6px;">
-                Em 85 de cada 100 futuros possíveis, a equipe entrega até 17 semanas. O padrão ouro de governança para acordos de nível de serviço.
-              </p>
-            </div>
-
-            <div class="card" style="border-left: 6px solid #ef4444;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="card-title" style="color: #b91c1c; margin-bottom: 0;">P95 (Conservador / SLA)</span>
-                <span style="font-family: var(--font-hand); font-size: 32px; font-weight: 700; color: #b91c1c;">18 Semanas</span>
-              </div>
-              <p class="card-body" style="font-size: 16px; margin-top: 6px;">
-                Recomendado para contratos com multas pesadas de descumprimento de SLA ou janelas regulatórias rígidas (BACEN, LGPD).
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Resultados da Simulação • Níveis de Risco</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 9: Curva S e Scope Creep (Sem Acento -> Gaegu Bold)           -->
-    <!-- =================================================================== -->
-    <section class="slide fb-sem-acento" data-index="9">
-      <div class="slide-header">
-        <h2 class="slide-title">o escopo sempre cresce</h2>
-        <div class="slide-ressalva">(monte carlo precifica a incerteza)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2-wide-img">
-          <div class="chart-frame">
-            <img src="./img/fig4_curva_s_cdf_risco.png" alt="Curva S Cumulativa comparando Escopo Fixo e Dinâmico">
-            <div class="chart-caption">Figura 4 — Curva S (CDF) contrastando Escopo Fixo vs Escopo Dinâmico com Scope Creep</div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 18px;">
-            <div class="card">
-              <div class="card-title">📈 A Curva S Cumulativa</div>
-              <p class="card-body">
-                A Curva S responde diretamente ao stakeholder: <em>"Se você precisa de 90% de certeza, o prazo é X; se aceita 80%, o prazo é Y."</em>
-              </p>
-            </div>
-
-            <div class="card" style="border-left: 5px solid #ef4444;">
-              <div class="card-title" style="color: #b91c1c;">💥 O Custo Real do Scope Creep</div>
-              <p class="card-body">
-                Com uma taxa modesta de descoberta de novos itens (+0,65 itens/semana):
-              </p>
-              <div style="display: flex; justify-content: space-around; margin-top: 10px; text-align: center;">
-                <div>
-                  <div style="font-size: 13px; color: var(--muted);">P85 ESCOPO FIXO</div>
-                  <div style="font-family: var(--font-gaegu); font-size: 32px; font-weight: 700; color: #2563eb;">17 Semanas</div>
-                </div>
-                <div style="font-size: 28px; color: #ef4444; align-self: center;">➔</div>
-                <div>
-                  <div style="font-size: 13px; color: var(--muted);">P85 DINÂMICO</div>
-                  <div style="font-family: var(--font-gaegu); font-size: 32px; font-weight: 700; color: #dc2626;">21 Semanas</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="card" style="border-left: 5px solid var(--cyan);">
-              <div class="card-title" style="color: var(--cyan-dark);">🤝 Negociação Baseada em Fatos</div>
-              <p class="card-body">
-                O cliente descobre que pedir mais 10 funcionalidades custa <strong>4 semanas adicionais de prazo</strong>. A conversa deixa de ser emocional e se torna matemática.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Curva S &amp; Gestão do Scope Creep</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 10: Contraste com Outros Temas (Com Acento -> Itim)           -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="10">
-      <div class="slide-header">
-        <h2 class="slide-title">monte carlo orquestra tudo</h2>
-        <div class="slide-ressalva">(as outras métricas são peças do quebra-cabeça)</div>
-      </div>
-
-      <div class="slide-content">
-        <table class="matrix-table">
-          <thead>
-            <tr>
-              <th style="width: 25%;">TEMA DA DISCIPLINA</th>
-              <th style="width: 35%;">MÉTODO CONVENCIONAL</th>
-              <th style="width: 40%;">A RESPOSTA COM MONTE CARLO (TEMA 7)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Story Points &amp; Planning Poker</strong></td>
-              <td><span class="tag-old">❌ Subjetivo</span> — Votação arbitrária distorcida pela Lei de Goodhart.</td>
-              <td><span class="tag-new">✔ Throughput Factual</span> — Conta itens entregues na Definition of Done.</td>
-            </tr>
-            <tr>
-              <td><strong>Velocity</strong></td>
-              <td><span class="tag-old">❌ Determinístico</span> — Média aritmética que ignora dispersão e variância.</td>
-              <td><span class="tag-new">✔ Curva Cumulativa</span> — Simula 10.000 futuros e entrega percentis de certeza.</td>
-            </tr>
-            <tr>
-              <td><strong>CFD (Fluxo Cumulativo)</strong></td>
-              <td><span class="tag-old">🔍 Diagnóstico Passado</span> — Exibe o acúmulo de WIP histórico.</td>
-              <td><span class="tag-new">✔ Projeção Futura</span> — Alimenta a simulação com a vazão extraída do CFD.</td>
-            </tr>
-            <tr>
-              <td><strong>Lei de Little (L = λW)</strong></td>
-              <td><span class="tag-old">📐 Estático</span> — Assume fluxo perfeitamente contínuo e estável.</td>
-              <td><span class="tag-new">✔ Modelo Estocástico</span> — Simula a turbulência quando as premissas variam.</td>
-            </tr>
-            <tr>
-              <td><strong>Lead Time / Cycle Time</strong></td>
-              <td><span class="tag-old">⏳ Micro-nível</span> — Mede a duração de itens individuais isolados.</td>
-              <td><span class="tag-new">✔ Macro-nível</span> — Responde: <em>"Quando a release inteira estará concluída?"</em></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Síntese Comparativa da Engenharia</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SLIDE 11: Conclusão & Playbook (Com Acento -> Itim)                 -->
-    <!-- =================================================================== -->
-    <section class="slide" data-index="11">
-      <div class="slide-header">
-        <h2 class="slide-title">previsibilidade sem chute</h2>
-        <div class="slide-ressalva">(estatística vence adivinhação)</div>
-      </div>
-
-      <div class="slide-content">
-        <div class="grid-2">
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="card" style="border-left: 6px solid var(--ink);">
-              <div style="font-weight: 700; color: var(--muted); font-size: 14px;">PASSO 1</div>
-              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Limite o WIP (Kanban)</div>
-              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Estabilize o fluxo reduzindo multitarefa para que a vazão histórica reflita a capacidade real.</p>
-            </div>
-
-            <div class="card" style="border-left: 6px solid #3b82f6;">
-              <div style="font-weight: 700; color: #1d4ed8; font-size: 14px;">PASSO 2</div>
-              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Colete Throughput Semanal</div>
-              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Registre a quantidade de itens concluídos por semana (mínimo de 20 a 30 observações).</p>
-            </div>
-
-            <div class="card" style="border-left: 6px solid #10b981;">
-              <div style="font-weight: 700; color: #047857; font-size: 14px;">PASSO 3</div>
-              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Rode 10.000 Simulações</div>
-              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Utilize bibliotecas open-source (rodbv/quando) com amostragem com reposição e Scope Creep.</p>
-            </div>
-
-            <div class="card" style="border-left: 6px solid var(--cyan);">
-              <div style="font-weight: 700; color: var(--cyan-dark); font-size: 14px;">PASSO 4</div>
-              <div style="font-family: var(--font-hand); font-size: 22px; color: var(--ink);">Pactue no P85 ou P95</div>
-              <p class="card-body" style="font-size: 16px; margin-top: 4px;">Apresente a Curva S aos patrocinadores e assuma compromissos com risco controlado.</p>
-            </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; justify-content: center; gap: 24px; padding-left: 20px;">
-            <div class="card" style="background: #faf9f6; border: 2px dashed var(--cyan);">
-              <div style="font-family: var(--font-hand); font-size: 30px; color: var(--ink);">Repositório Privado no GitHub</div>
-              <p style="font-size: 17px; color: #4b5563; margin-top: 8px; line-height: 1.5;">
-                Contém o artigo de 17 páginas ABNT em LaTeX, o script completo de simulação estocástica, suíte de 7 testes unitários e este deck de slides.
-              </p>
-              <div style="margin-top: 16px;">
-                <span class="pill pill-cyan" style="font-size: 14px;">fabiobrasileiroo / metricas-estimativas-software-monte-carlo</span>
-              </div>
-            </div>
-
-            <div>
-              <div style="font-family: var(--font-hand); font-size: 32px; color: var(--ink);">Obrigado!</div>
-              <div style="font-size: 17px; color: var(--muted); margin-top: 4px;">Fábio Henrique Mendes Brasileiro • Turma ENGS231N01</div>
-              <div style="font-size: 15px; color: var(--cyan); margin-top: 2px;">Engenharia de Software • Manaus, AM</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slide-footer-author">Fábio Brasileiro <span class="slide-footer-tag">Tema 7 • Simulação de Monte Carlo</span></div>
-      <img class="slide-avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
-    </section>
-
+<div class="deck" id="deck">
+
+<!-- 1 · capa -->
+<section class="slide" data-fx="contadores">
+  <div class="head">
+    <h1 class="titulo">previsão de prazos com monte carlo</h1>
+    <div class="ressalva">(porque estimar em horas é puro palpite)</div>
   </div>
+  <div class="body com-avatar baixo" style="top: 420px;">
+    <p class="lede" data-anim>Tema 7 da Unidade VI: simular <strong>dez mil futuros possíveis</strong> a partir do que a equipe já entregou, e prometer prazos com probabilidade declarada.</p>
+    <div class="grid3" style="margin-top: 56px; max-width: 1150px;">
+      <div data-anim><div class="num" data-count="10000">10.000</div><div class="rotulo">futuros simulados</div></div>
+      <div data-anim><div class="num" data-count="26">26</div><div class="rotulo">semanas de histórico</div></div>
+      <div data-anim><div class="num cyan" data-count="572">572</div><div class="rotulo">PRs reais do NestJS</div></div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Prof. Me. Alexsand Farias de Souza · Métricas e Estimativas</small></div>
+  <img class="avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
+</section>
+
+<!-- 2 · a pergunta -->
+<section class="slide">
+  <div class="head">
+    <h2 class="titulo">quando fica pronto?</h2>
+    <div class="ressalva">(a pergunta que todo gerente faz)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="col" style="gap: 30px; margin-top: 30px;">
+      <p class="lede" data-anim>As respostas de sempre:</p>
+      <div class="card" data-anim><h3>"umas 15 semanas"</h3><p>Soma de horas ou de story points. Um número só, sem dizer o risco.</p></div>
+      <div class="card" data-anim><h3>"depende"</h3><p>Verdade, mas não ajuda ninguém a planejar.</p></div>
+      <div class="card destaque" data-anim><h3>"17 semanas, com 85% de chance"</h3><p>A resposta do Monte Carlo: <strong>prazo + probabilidade</strong>, calculados do histórico real.</p></div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>O problema</small></div>
+  <img class="avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+</section>
+
+<!-- 3 · média e dependências -->
+<section class="slide" data-fx="corrente">
+  <div class="head">
+    <h2 class="titulo">a média é uma ilusão</h2>
+    <div class="ressalva">(e a velocity mente com classe)</div>
+  </div>
+  <div class="body com-avatar">
+    <p class="lede" data-anim>Dez tarefas em sequência, cada uma com <strong>75% de chance</strong> de sair no prazo estimado. Qual a chance de <strong>todas</strong> saírem?</p>
+    <div class="corrente" id="corrente" style="margin-top: 48px;"></div>
+    <div class="row" style="margin-top: 52px; align-items: flex-end; gap: 60px;">
+      <div><div class="num cyan" id="probCorrente">75,0%</div><div class="rotulo">chance da cadeia inteira</div></div>
+      <div class="formula" data-anim style="padding-bottom: 14px;">P = 0,75<sup>10</sup> ≈ 5,63%</div>
+    </div>
+    <p class="nota" data-anim style="margin-top: 34px;">Savage chama de <em>Flaw of Averages</em>: E[f(X)] ≠ f(E[X]). Planos feitos com médias atrasam por construção.</p>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Temas 1 e 2 · story points e velocity</small></div>
+  <img class="avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+</section>
+
+<!-- 4 · origem: estimando pi -->
+<section class="slide" data-fx="pi">
+  <div class="head">
+    <h2 class="titulo">do cassino ao software</h2>
+    <div class="ressalva">(ulam jogava cartas em los alamos)</div>
+  </div>
+  <div class="body">
+    <div class="row" style="gap: 70px; height: 100%;">
+      <div style="flex: 0 0 640px; height: 640px; margin-top: -40px;">
+        <canvas id="canvasPi" width="1280" height="1280" style="width: 640px; height: 640px; border: 1.5px solid var(--line); border-radius: 14px;"></canvas>
+      </div>
+      <div class="col" style="flex: 1; max-width: 560px; gap: 26px;">
+        <div data-anim><div class="num" id="piEstimado">3,1416</div><div class="rotulo">estimativa de π</div></div>
+        <div data-anim><div class="num cyan" id="piPontos" style="font-size: 64px;">0</div><div class="rotulo">pontos sorteados</div></div>
+        <p class="lede" data-anim style="font-size: 26px;">Sorteie pontos no quadrado. A fração que cai dentro do círculo, vezes 4, converge para π. O erro cai com <strong class="mono">1/√N</strong>.</p>
+        <p class="nota" data-anim>Ulam, von Neumann e Metropolis, 1946. O nome vem do cassino de Mônaco.</p>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Fundamentação</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 5 · GQM -->
+<section class="slide">
+  <div class="head">
+    <h2 class="titulo">meça com propósito</h2>
+    <div class="ressalva">(métrica sem pergunta é vaidade no dashboard)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="card destaque" data-anim>
+      <span class="pill">GOAL · TEMA 8 (GQM)</span>
+      <h3 style="margin-top: 14px; font-size: 36px;">Prever o prazo da release com 85% de confiança, de forma auditável.</h3>
+    </div>
+    <div class="grid3" style="margin-top: 34px;">
+      <div class="card" data-anim><span class="pill acai">Q1</span><h3 style="margin-top: 12px;">Quanto a equipe entrega por semana?</h3><p><b>M1:</b> throughput semanal (26 semanas).</p></div>
+      <div class="card" data-anim><span class="pill acai">Q2</span><h3 style="margin-top: 12px;">Qual a chance de entregar 60 itens até cada semana?</h3><p><b>M2:</b> Curva S de 10.000 simulações.</p></div>
+      <div class="card" data-anim><span class="pill acai">Q3</span><h3 style="margin-top: 12px;">Quanto o escopo novo atrasa?</h3><p><b>M3:</b> diferença do P85 com e sem scope creep.</p></div>
+    </div>
+    <p class="nota" data-anim style="margin-top: 28px;">Ciclo de medição alinhado à ISO/IEC/IEEE 15939: planejar, executar, avaliar, sustentar.</p>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Governança da medição</small></div>
+  <img class="avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 6 · throughput -->
+<section class="slide" data-fx="barrasHistorico">
+  <div class="head">
+    <h2 class="titulo">conte itens concluídos</h2>
+    <div class="ressalva">(throughput não aceita debate filosófico)</div>
+  </div>
+  <div class="body com-avatar">
+    <div style="height: 430px;" id="graficoHistorico"></div>
+    <div class="grid4" style="margin-top: 26px;">
+      <div data-anim><div class="num" style="font-size: 64px;" data-count="102">102</div><div class="rotulo">itens entregues</div></div>
+      <div data-anim><div class="num" style="font-size: 64px;" data-count="3.92" data-dec="2">3,92</div><div class="rotulo">média por semana</div></div>
+      <div data-anim><div class="num" style="font-size: 64px;" data-count="1.49" data-dec="2">1,49</div><div class="rotulo">desvio padrão</div></div>
+      <div data-anim><div class="num cyan" style="font-size: 64px;">1 a 7</div><div class="rotulo">amplitude</div></div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Temas 3 e 4 · throughput, WIP e Lei de Little</small></div>
+  <img class="avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+<!-- 7 · código -->
+<section class="slide" data-fx="codigo">
+  <div class="head">
+    <h2 class="titulo">leia o código-fonte</h2>
+    <div class="ressalva">(o algoritmo cabe em quinze linhas)</div>
+  </div>
+  <div class="body">
+    <div class="row" style="gap: 50px;">
+      <div class="terminal" data-anim style="flex: 0 0 1000px;">
+        <div class="bar"><i></i><i></i><i></i><span>src/monte-carlo.ts · bun test → 15 pass</span></div>
+<pre id="codigoMC"><span class="ln"><span class="kw">export function</span> <span class="fn">simularQuando</span>(historico: <span class="ty">number</span>[], backlog: <span class="ty">number</span>) {</span>
+<span class="ln">  <span class="kw">const</span> rng = <span class="fn">criarRng</span>(<span class="nm">42</span>); <span class="cm">// semente fixa: reprodutível</span></span>
+<span class="ln">  <span class="kw">const</span> resultados: <span class="ty">number</span>[] = [];</span>
+<span class="ln">  <span class="kw">for</span> (<span class="kw">let</span> r = <span class="nm">0</span>; r &lt; <span class="nm">10_000</span>; r++) {</span>
+<span class="ln">    <span class="kw">let</span> restante = backlog, semanas = <span class="nm">0</span>;</span>
+<span class="ln">    <span class="kw">while</span> (restante &gt; <span class="nm">0</span>) {</span>
+<span class="ln">      semanas++;</span>
+<span class="ln">      restante -= <span class="fn">sortear</span>(historico, rng); <span class="cm">// com reposição</span></span>
+<span class="ln">    }</span>
+<span class="ln">    resultados.<span class="fn">push</span>(semanas);</span>
+<span class="ln">  }</span>
+<span class="ln">  <span class="kw">return</span> resultados; <span class="cm">// depois: P50, P85, P95</span></span>
+<span class="ln">}</span></pre>
+      </div>
+      <div class="col" style="flex: 1; gap: 24px;">
+        <div class="card" data-anim><h3>bootstrapping</h3><p>Cada semana futura recebe uma semana do passado, sorteada. Nenhuma curva normal é assumida.</p></div>
+        <div class="card" data-anim><h3>mesmos números do Python</h3><p>P50/P85/P95 = 16/17/18 nos dois motores, e na lógica do <span class="mono">rodbv/quando</span> e do <span class="mono">thawkin3</span>.</p></div>
+        <div class="card destaque" data-anim><h3>TypeScript + Bun</h3><p>10.000 iterações em milissegundos. Dá para rodar no CI a cada merge.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Implementação</small></div>
+</section>
+
+<!-- 8 · trajetórias -->
+<section class="slide" data-fx="trajetorias">
+  <div class="head" style="right: 110px;">
+    <h2 class="titulo">um futuro por linha</h2>
+    <div class="ressalva">(cada linha zera o backlog em uma semana diferente)</div>
+  </div>
+  <div class="body" style="right: 470px;">
+    <div style="height: 560px;" id="graficoTrajetorias"></div>
+    <div class="legenda"><span><i style="background: var(--camiseta); opacity: .5"></i>60 trajetórias simuladas de burn-down</span><span><i style="background: var(--cyan)"></i>onde cada uma terminou</span></div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Tema 6 · um burndown probabilístico</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 9 · histograma e percentis -->
+<section class="slide" data-fx="histograma">
+  <div class="head">
+    <h2 class="titulo">p50 é cara ou coroa</h2>
+    <div class="ressalva">(assuma compromissos com o p85)</div>
+  </div>
+  <div class="body com-avatar" style="right: 500px;">
+    <div class="row" style="gap: 40px; height: 100%;">
+      <div style="flex: 1; height: 560px;" id="graficoHistograma"></div>
+      <div class="col" style="flex: 0 0 300px; gap: 26px; justify-content: center;">
+        <div data-anim><div class="num" style="font-size: 76px;"><span data-count="16">16</span> sem</div><div class="rotulo">P50 · 50% de risco</div></div>
+        <div data-anim><div class="num cyan" style="font-size: 76px;"><span data-count="17">17</span> sem</div><div class="rotulo">P85 · compromisso</div></div>
+        <div data-anim><div class="num acai" style="font-size: 76px;"><span data-count="18">18</span> sem</div><div class="rotulo">P95 · contrato com multa</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Resultado · backlog de 60 itens</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+<!-- 10 · curva S e scope creep -->
+<section class="slide" data-fx="curvaS">
+  <div class="head">
+    <h2 class="titulo">o escopo sempre cresce</h2>
+    <div class="ressalva">(monte carlo precifica a incerteza)</div>
+  </div>
+  <div class="body com-avatar" style="right: 480px;">
+    <div class="row" style="gap: 44px;">
+      <div style="flex: 1; height: 560px;" id="graficoCurvaS"></div>
+      <div class="col" style="flex: 0 0 330px; justify-content: center; gap: 30px;">
+        <div data-anim><div class="num" style="font-size: 76px;">17 → <span class="acai">21</span></div><div class="rotulo">P85 em semanas</div></div>
+        <p class="lede" data-anim style="font-size: 25px;">Com <strong>+0,65 item novo por semana</strong>, o mesmo nível de confiança custa <strong>4 semanas a mais</strong>.</p>
+        <p class="nota" data-anim>A conversa com o cliente deixa de ser opinião e vira conta.</p>
+      </div>
+    </div>
+    <div class="legenda"><span><i style="background: var(--camiseta)"></i>escopo fixo</span><span><i style="background: var(--acai)"></i>com scope creep</span><span><i style="background: var(--cyan)"></i>linha de 85%</span></div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Curva S · Tema 5 mostra o gargalo, Monte Carlo o prazo</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+</section>
+
+<!-- 11 · conta analítica -->
+<section class="slide" data-fx="formula">
+  <div class="head">
+    <h2 class="titulo">a conta de padaria</h2>
+    <div class="ressalva">(o TCL confere o resultado)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="formula" data-anim>
+      P85 ≈ <span class="frac"><span>B</span><span>μ</span></span> + ½ + 1,036 · √<span class="frac"><span>B · σ²</span><span>μ³</span></span>
+    </div>
+    <div class="col" style="margin-top: 34px; gap: 14px;" id="passosFormula">
+      <div class="passo" data-anim>B = 60 itens · μ = 3,92 · σ² = 2,22</div>
+      <div class="passo" data-anim>= 15,29 + 0,5 + 1,036 · 1,46</div>
+      <div class="passo" data-anim>= <b>17,3 semanas</b> &nbsp;<span class="hand cyan" style="font-size: 34px;">(simulação: 17)</span></div>
+    </div>
+    <table class="tabela" data-anim style="margin-top: 40px; max-width: 1100px;">
+      <tr><th></th><th>simulado</th><th>fórmula</th><th>com scope creep</th></tr>
+      <tr><td>média</td><td>15,72</td><td>15,79</td><td>18,77 · 18,83</td></tr>
+      <tr><td>desvio</td><td>1,48</td><td>1,46</td><td>2,16 · 2,14</td></tr>
+    </table>
+    <p class="nota" data-anim style="margin-top: 22px;">A incerteza cresce com √B: dobrar o backlog dobra o prazo médio, mas a folga só aumenta 41%.</p>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Teorema Central do Limite para processos de renovação</small></div>
+  <img class="avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 12 · DKW -->
+<section class="slide" data-fx="dkw">
+  <div class="head">
+    <h2 class="titulo">dez mil não é número mágico</h2>
+    <div class="ressalva">(a desigualdade DKW explica)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="formula" data-anim style="font-size: 40px;">ε = √( ln(2/α) / 2N )</div>
+    <p class="lede" data-anim style="margin-top: 18px;">Erro máximo da Curva S inteira, com 95% de confiança. Mede o erro do <strong>sorteio</strong>, não o do histórico.</p>
+    <div style="height: 330px; margin-top: 30px;" id="graficoDKW"></div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Dvoretzky–Kiefer–Wolfowitz (1956) · Massart (1990)</small></div>
+  <img class="avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 13 · backtest nestjs -->
+<section class="slide" data-fx="backtest">
+  <div class="head" style="right: 110px;">
+    <h2 class="titulo">testei no mundo real</h2>
+    <div class="ressalva">(nestjs/nest, 572 PRs reais, 52 semanas)</div>
+  </div>
+  <div class="body" style="right: 440px;">
+    <div class="row" style="gap: 50px;">
+      <div style="flex: 1; height: 520px;" id="graficoBacktest"></div>
+      <div class="col" style="flex: 0 0 300px; gap: 22px; justify-content: center;">
+        <div data-anim><div class="num cyan" style="font-size: 80px;"><span data-count="83.3" data-dec="1">83,3</span>%</div><div class="rotulo">P85 cumprido</div></div>
+        <div data-anim><div class="num" style="font-size: 80px;"><span data-count="50" data-dec="1">50,0</span>%</div><div class="rotulo">mediana cumprida</div></div>
+        <div data-anim><div class="num acai" style="font-size: 80px;"><span data-count="41.7" data-dec="1">41,7</span>%</div><div class="rotulo">média × semanas</div></div>
+      </div>
+    </div>
+    <div class="legenda"><span><i style="background: var(--ink)"></i>PRs entregues nas 6 semanas</span><span><i style="background: var(--cyan)"></i>compromisso P85</span><span><i style="background: var(--acai)"></i>média × 6 (velocity)</span></div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Backtest rolante · período estável, 12 janelas</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+<!-- 14 · mudança de regime -->
+<section class="slide" data-fx="regime">
+  <div class="head">
+    <h2 class="titulo">o passado tem validade</h2>
+    <div class="ressalva">(quando o fluxo muda, o histórico recomeça)</div>
+  </div>
+  <div class="body com-avatar">
+    <div style="height: 400px;" id="graficoRegime"></div>
+    <div class="grid3" style="margin-top: 30px;">
+      <div class="card" data-anim><h3>estacionariedade</h3><p>Na semana 44 a vazão saltou de <b>5</b> para <b>40</b> PRs por semana. A previsão antiga perdeu a validade.</p></div>
+      <div class="card" data-anim><h3>granularidade</h3><p>Itens não precisam ter o mesmo tamanho, mas épico de meses junto de tarefa de minutos distorce.</p></div>
+      <div class="card" data-anim><h3>WIP limitado</h3><p>Lei de Little: sem limite de WIP, o cycle time cresce e o throughput fica instável.</p></div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Premissas de validade</small></div>
+  <img class="avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+</section>
+
+<!-- 15 · curadoria -->
+<section class="slide">
+  <div class="head">
+    <h2 class="titulo">não reinvente a roda</h2>
+    <div class="ressalva">(leia o open source antes)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="grid2" style="gap: 44px;">
+      <div class="col" style="gap: 18px;">
+        <span class="pill" data-anim style="align-self: flex-start;">PARA ESTUDAR · CSV E NOTEBOOK</span>
+        <div class="card" data-anim><h3 class="mono" style="font-size: 23px;">jabopiti/kanban-monte-carlo-simulation</h3><p>Jupyter: "quando?" e "quantos?". O mais parecido com este trabalho.</p></div>
+        <div class="card" data-anim><h3 class="mono" style="font-size: 23px;">jsherer/kanban-metrics</h3><p>Lê o histórico do Jira, Monte Carlo e curva de sobrevivência.</p></div>
+        <div class="card" data-anim><h3 class="mono" style="font-size: 23px;">rodbv/quando · thawkin3</h3><p>Biblioteca Python e app TypeScript: validação dos meus percentis.</p></div>
+      </div>
+      <div class="col" style="gap: 18px;">
+        <span class="pill acai" data-anim style="align-self: flex-start;">PARA USAR · PLATAFORMAS</span>
+        <div class="card acai-b" data-anim><h3 class="mono" style="font-size: 23px;">LetPeopleWork/Lighthouse</h3><p>A mais completa e ativa: Jira, Azure DevOps, CSV e Linear.</p></div>
+        <div class="card" data-anim><h3 class="mono" style="font-size: 23px;">nbrown02/Capacity-Planning...</h3><p>Template Power BI para Jira e Azure DevOps, previsão por feature.</p></div>
+        <div class="card" data-anim><h3 class="mono" style="font-size: 23px;">dvhthomas/flowmetrics</h3><p>Throughput a partir de PRs do GitHub, o mesmo método do estudo NestJS.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Curadoria · nenhum fork entre eles, mesma ideia</small></div>
+  <img class="avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 16 · outros temas -->
+<section class="slide">
+  <div class="head">
+    <h2 class="titulo">monte carlo junta as peças</h2>
+    <div class="ressalva">(os outros temas são a matéria-prima)</div>
+  </div>
+  <div class="body com-avatar">
+    <table class="tabela">
+      <tr><th>tema</th><th>papel na previsão</th></tr>
+      <tr data-anim><td>1 e 2 · story points, poker, velocity</td><td>O contraste: estimativa subjetiva e média, sujeita à Lei de Goodhart.</td></tr>
+      <tr data-anim><td>3 · lead e cycle time</td><td>Nível do item; Monte Carlo responde no nível da release.</td></tr>
+      <tr data-anim><td>4 · throughput e WIP</td><td>A entrada da simulação. WIP limitado deixa o throughput estável.</td></tr>
+      <tr data-anim><td>5 · CFD</td><td>Mostra onde está o gargalo; a simulação mostra quanto ele custa em prazo.</td></tr>
+      <tr data-anim><td>6 · burndown e burnup</td><td>Cada trajetória simulada é um burndown possível.</td></tr>
+      <tr data-anim><td>8 · GQM</td><td>Dá a meta, as perguntas e as métricas desta previsão.</td></tr>
+      <tr class="mc" data-anim><td>7 · Monte Carlo</td><td>Junta tudo em uma resposta: prazo com probabilidade.</td></tr>
+    </table>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>Síntese</small></div>
+  <img class="avatar" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 17 · conclusão -->
+<section class="slide">
+  <div class="head">
+    <h2 class="titulo">previsibilidade sem chute</h2>
+    <div class="ressalva">(estatística vence adivinhação)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="grid4" style="gap: 24px;">
+      <div class="card" data-anim><div class="num cyan" style="font-size: 60px;">1</div><h3>limite o WIP</h3><p>Fluxo estável primeiro.</p></div>
+      <div class="card" data-anim><div class="num cyan" style="font-size: 60px;">2</div><h3>conte por semana</h3><p>20 a 30 semanas de throughput.</p></div>
+      <div class="card" data-anim><div class="num cyan" style="font-size: 60px;">3</div><h3>simule 10.000</h3><p>Com e sem scope creep.</p></div>
+      <div class="card destaque" data-anim><div class="num cyan" style="font-size: 60px;">4</div><h3>prometa o P85</h3><p>P95 se houver multa.</p></div>
+    </div>
+    <div class="row" style="margin-top: 60px; align-items: flex-end; gap: 70px;">
+      <div data-anim>
+        <div class="hand" style="font-size: 64px;">obrigado!</div>
+        <div class="nota" style="margin-top: 6px;">Artigo, motor TypeScript, testes e dados no repositório:</div>
+        <div class="mono" style="font-size: 22px; color: var(--cyan-dark); margin-top: 6px;">github.com/fabiobrasileiroo/metricas-estimativas-software-monte-carlo</div>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro <small>@fabiobrasileiroo</small></div>
+  <img class="avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+</div>
 </div>
 
-<!-- ======================================================================= -->
-<!-- CONTROLES DE NAVEGAÇÃO E ATALHOS                                        -->
-<!-- ======================================================================= -->
-<nav class="controls-bar" aria-label="Controles da apresentação">
-  <div style="display: flex; gap: 12px; align-items: center;">
-    <button class="btn-ctrl" id="btnPrev" title="Slide anterior (Seta Esquerda / Page Up)">◀ Anterior</button>
-    <button class="btn-ctrl" id="btnNext" title="Próximo slide (Seta Direita / Espaço / Page Down)">Próximo ▶</button>
-    <span class="slide-counter" id="slideCounter">1 / 11</span>
+<nav class="controls" aria-label="Controles da apresentação">
+  <div class="grupo">
+    <button class="btn" id="btnAnterior">anterior</button>
+    <span class="contador" id="contador">1 / 17</span>
+    <button class="btn" id="btnProximo">próximo</button>
   </div>
-
-  <div style="display: flex; gap: 12px; align-items: center;">
-    <button class="btn-ctrl" id="btnOverview" title="Visão geral de todos os slides (Tecla O)">📑 Visão Geral</button>
-    <button class="btn-ctrl" id="btnFullscreen" title="Alternar tela cheia (Tecla F)">⛶ Tela Cheia</button>
-    <button class="btn-ctrl" id="btnPrint" title="Imprimir ou salvar PDF (Tecla P)">🖨️ Imprimir / PDF</button>
+  <span class="dica">setas navegam · R repete a animação · F tela cheia · P imprime</span>
+  <div class="grupo">
+    <button class="btn" id="btnRepetir">repetir animação</button>
+    <button class="btn" id="btnTela">tela cheia</button>
   </div>
 </nav>
 
-<!-- Modal de Visão Geral -->
-<div class="overview-modal" id="overviewModal">
-  <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto 30px auto;">
-    <h2 style="font-family: var(--font-hand); font-size: 36px; color: var(--branco);">Visão Geral dos Slides</h2>
-    <button class="btn-ctrl" id="btnCloseOverview">✕ Fechar</button>
-  </div>
-  <div class="overview-grid" id="overviewGrid"></div>
-</div>
-
+<script src="./vendor/motion.js"></script>
+<script src="./resultados/resultados.js"></script>
 <script>
-(function() {
-  const slides = Array.from(document.querySelectorAll('.slide'));
-  const total = slides.length;
-  let current = 0;
+(() => {
+  const R = window.RESULTADOS;
+  const M = window.Motion;
+  const reduzido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const imprimindo = matchMedia("print").matches;
+  const slides = [...document.querySelectorAll(".slide")];
+  const fmt = (x, d = 0) => x.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const SAIDA = [0.22, 1, 0.36, 1];
 
-  const deck = document.getElementById('deck');
-  const counter = document.getElementById('slideCounter');
-  const progressBar = document.getElementById('progressBar');
-  const overviewModal = document.getElementById('overviewModal');
-  const overviewGrid = document.getElementById('overviewGrid');
-
-  // Ajuste de escala 16:9 responsivo
-  function resizeDeck() {
-    const scale = Math.min(window.innerWidth / 1920, (window.innerHeight - 64) / 1080);
-    deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
-  }
-  window.addEventListener('resize', resizeDeck);
-  window.addEventListener('load', resizeDeck);
-
-  function showSlide(index) {
-    if (index < 0) index = 0;
-    if (index >= total) index = total - 1;
-    current = index;
-
-    slides.forEach((s, i) => {
-      s.classList.toggle('is-active', i === current);
-    });
-
-    counter.textContent = `${current + 1} / ${total}`;
-    progressBar.style.width = `${((current + 1) / total) * 100}%`;
-    updateOverviewActive();
-  }
-
-  function nextSlide() { showSlide(current + 1); }
-  function prevSlide() { showSlide(current - 1); }
-
-  document.getElementById('btnNext').addEventListener('click', nextSlide);
-  document.getElementById('btnPrev').addEventListener('click', prevSlide);
-
-  // Teclado
-  window.addEventListener('keydown', (e) => {
-    if (overviewModal.classList.contains('is-open')) {
-      if (e.key === 'Escape' || e.key === 'o' || e.key === 'O') {
-        toggleOverview();
-      }
-      return;
-    }
-    switch (e.key) {
-      case 'ArrowRight':
-      case 'PageDown':
-      case ' ':
-        e.preventDefault();
-        nextSlide();
-        break;
-      case 'ArrowLeft':
-      case 'PageUp':
-      case 'Backspace':
-        e.preventDefault();
-        prevSlide();
-        break;
-      case 'Home':
-        e.preventDefault();
-        showSlide(0);
-        break;
-      case 'End':
-        e.preventDefault();
-        showSlide(total - 1);
-        break;
-      case 'f':
-      case 'F':
-        toggleFullscreen();
-        break;
-      case 'o':
-      case 'O':
-        toggleOverview();
-        break;
-      case 'p':
-      case 'P':
-        window.print();
-        break;
-    }
+  // ---------------------------------------------------------------------
+  // Regra de fontes: frase sem acento -> Gaegu Bold; com acento -> Itim.
+  // Decide pela frase inteira (título + ressalva), como no design system.
+  // ---------------------------------------------------------------------
+  const temAcento = (t) => /[^\x00-\x7F]/.test(t.replace(/[²³ªº—–→·×≈]/g, ""));
+  slides.forEach((s) => {
+    const frase = (s.querySelector(".titulo")?.textContent ?? "") + (s.querySelector(".ressalva")?.textContent ?? "");
+    s.classList.toggle("sem-acento", !temAcento(frase));
   });
 
-  // Tela Cheia
-  function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
+  // ---------------------------------------------------------------------
+  // Utilidades SVG
+  // ---------------------------------------------------------------------
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs = {}, pai) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (pai) pai.appendChild(e);
+    return e;
   }
-  document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
-  document.getElementById('btnPrint').addEventListener('click', () => window.print());
+  function criarSvg(id, w, h) {
+    const box = document.getElementById(id);
+    box.innerHTML = "";
+    return el("svg", { viewBox: `0 0 ${w} ${h}`, class: "chart", preserveAspectRatio: "none" }, box);
+  }
+  function escala(d0, d1, r0, r1) { return (v) => r0 + ((v - d0) / (d1 - d0)) * (r1 - r0); }
+  function linha(pontos) { return pontos.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" "); }
+  function texto(svg, x, y, t, attrs = {}) { const e = el("text", { x, y, ...attrs }, svg); e.textContent = t; return e; }
+  function prepararTraco(path) {
+    const L = path.getTotalLength();
+    path.style.strokeDasharray = L;
+    path.dataset.len = L;
+    return path;
+  }
+  function desenhar(paths, opcoes = {}) {
+    if (!M || reduzido) return;
+    paths.forEach((p) => { p.style.strokeDashoffset = p.dataset.len; });
+    M.animate(paths, { strokeDashoffset: 0 }, { duration: 1.2, ease: SAIDA, ...opcoes });
+  }
+  function crescer(rects, opcoes = {}) {
+    if (!M || reduzido) return;
+    rects.forEach((r) => { r.style.transformBox = "fill-box"; r.style.transformOrigin = "50% 100%"; });
+    M.animate(rects, { transform: ["scaleY(0)", "scaleY(1)"] }, { duration: 0.7, ease: SAIDA, delay: M.stagger(0.025), ...opcoes });
+  }
+  function surgir(els, opcoes = {}) {
+    if (!M || reduzido || !els.length) return;
+    M.animate(els, { opacity: [0, 1], transform: ["translateY(14px)", "translateY(0)"] }, { duration: 0.5, ease: SAIDA, ...opcoes });
+  }
 
-  // Visão Geral
-  function buildOverview() {
-    overviewGrid.innerHTML = '';
-    slides.forEach((s, i) => {
-      const card = document.createElement('div');
-      card.className = `overview-card ${i === current ? 'is-active' : ''}`;
-      const title = s.querySelector('.slide-title')?.textContent || `Slide ${i+1}`;
-      const ressalva = s.querySelector('.slide-ressalva')?.textContent || '';
-      card.innerHTML = `
-        <div class="overview-num">SLIDE ${i + 1}</div>
-        <div class="overview-title">${title}</div>
-        <div style="font-size: 14px; color: var(--cyan); margin-top: 4px;">${ressalva}</div>
-      `;
-      card.addEventListener('click', () => {
-        showSlide(i);
-        toggleOverview();
+  // ---------------------------------------------------------------------
+  // Gráficos (desenhados completos; a animação só os "redesenha")
+  // ---------------------------------------------------------------------
+  const graficos = {};
+
+  graficos.barrasHistorico = () => {
+    const W = 1200, H = 430, m = { l: 50, r: 10, t: 20, b: 50 };
+    const svg = criarSvg("graficoHistorico", W, H);
+    const h = R.historico, mx = 8;
+    const x = escala(0, h.length, m.l, W - m.r), y = escala(0, mx, H - m.b, m.t);
+    for (let v = 0; v <= mx; v += 2) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    const bw = (W - m.l - m.r) / h.length;
+    const barras = h.map((v, i) => el("rect", { x: x(i) + 5, y: y(v), width: bw - 10, height: y(0) - y(v), rx: 5, fill: "var(--camiseta)" }, svg));
+    const ym = y(R.estatisticas.media);
+    const media = prepararTraco(el("path", { d: `M${m.l},${ym} L${W - m.r},${ym}`, stroke: "var(--cyan)", "stroke-width": 4, "stroke-dasharray": "0", fill: "none" }, svg));
+    const rot = texto(svg, W - m.r, ym - 12, "média 3,92", { "text-anchor": "end", class: "rotulo-g", fill: "var(--cyan)", style: "fill: var(--cyan)" });
+    texto(svg, (W) / 2, H - 10, "26 semanas consecutivas", { "text-anchor": "middle" });
+    return () => { crescer(barras); desenhar([media], { delay: 0.8 }); surgir([rot], { delay: 1.6 }); };
+  };
+
+  graficos.trajetorias = () => {
+    const W = 1300, H = 560, m = { l: 60, r: 20, t: 20, b: 60 };
+    const svg = criarSvg("graficoTrajetorias", W, H);
+    const maxS = 22;
+    const x = escala(0, maxS, m.l, W - m.r), y = escala(0, 60, H - m.b, m.t);
+    for (let v = 0; v <= 60; v += 15) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    for (let s = 0; s <= maxS; s += 2) texto(svg, x(s), H - m.b + 32, s, { "text-anchor": "middle" });
+    texto(svg, m.l, m.t - 2, "itens restantes", { "font-size": 17 });
+    texto(svg, W - m.r, H - 6, "semanas", { "text-anchor": "end" });
+    const caminhos = R.trajetorias.map((c) => prepararTraco(el("path", {
+      d: linha(c.map((v, i) => [x(i), y(v)])), fill: "none", stroke: "var(--camiseta)", "stroke-width": 2.2, opacity: 0.32,
+    }, svg)));
+    // Pontos de chegada empilhados no eixo x (mini histograma)
+    const pilha = {};
+    const pontos = R.trajetorias.map((c) => {
+      const s = c.length - 1; pilha[s] = (pilha[s] ?? 0) + 1;
+      return el("circle", { cx: x(s), cy: y(0) - 4 - (pilha[s] - 1) * 11, r: 5, fill: "var(--cyan)" }, svg);
+    });
+    return () => {
+      desenhar(caminhos, { duration: 1.4, delay: M ? M.stagger(0.045) : 0, ease: "linear" });
+      surgir(pontos, { delay: M ? M.stagger(0.045, { startDelay: 1.3 }) : 0, duration: 0.3 });
+    };
+  };
+
+  graficos.histograma = () => {
+    const W = 900, H = 560, m = { l: 60, r: 20, t: 30, b: 60 };
+    const svg = criarSvg("graficoHistograma", W, H);
+    const semanas = Object.keys(R.histograma).map(Number).sort((a, b) => a - b);
+    const max = Math.max(...Object.values(R.histograma));
+    const x = escala(semanas[0] - 0.5, semanas.at(-1) + 0.5, m.l, W - m.r), y = escala(0, max * 1.12, H - m.b, m.t);
+    const bw = (W - m.l - m.r) / semanas.length;
+    const cor = (s) => s <= R.cenarioA.p50 ? "var(--camiseta)" : s <= R.cenarioA.p85 ? "var(--cyan)" : s <= R.cenarioA.p95 ? "var(--acai)" : "#d6d3d1";
+    const barras = semanas.map((s) => el("rect", { x: x(s) - bw / 2 + 4, y: y(R.histograma[s]), width: bw - 8, height: y(0) - y(R.histograma[s]), rx: 5, fill: cor(s) }, svg));
+    semanas.forEach((s) => texto(svg, x(s), H - m.b + 32, s, { "text-anchor": "middle" }));
+    texto(svg, W - m.r, H - 6, "semanas para entregar 60 itens", { "text-anchor": "end" });
+    const marcas = [["P50", R.cenarioA.p50, "var(--camiseta)"], ["P85", R.cenarioA.p85, "var(--cyan)"], ["P95", R.cenarioA.p95, "var(--acai)"]].map(([n, s, c], i) => {
+      const g = el("g", {}, svg);
+      el("line", { x1: x(s) + bw / 2, x2: x(s) + bw / 2, y1: m.t + 30 + i * 40, y2: y(0), stroke: c, "stroke-width": 3, "stroke-dasharray": "8 7" }, g);
+      texto(g, x(s) + bw / 2 + 10, m.t + 50 + i * 40, n, { class: "rotulo-g", style: `fill:${c}` });
+      return g;
+    });
+    return () => { crescer(barras, { delay: M ? M.stagger(0.05) : 0 }); surgir(marcas, { delay: M ? M.stagger(0.25, { startDelay: 1 }) : 0 }); };
+  };
+
+  graficos.curvaS = () => {
+    const W = 900, H = 560, m = { l: 70, r: 20, t: 20, b: 60 };
+    const svg = criarSvg("graficoCurvaS", W, H);
+    const c = R.curvaS;
+    const x = escala(c[0].semana, c.at(-1).semana, m.l, W - m.r), y = escala(0, 1, H - m.b, m.t);
+    for (let v = 0; v <= 1.001; v += 0.25) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, `${Math.round(v * 100)}%`, { "text-anchor": "end" }); }
+    c.filter((p) => p.semana % 2 === 0).forEach((p) => texto(svg, x(p.semana), H - m.b + 32, p.semana, { "text-anchor": "middle" }));
+    const y85 = y(0.85);
+    const ref = el("line", { x1: m.l, x2: W - m.r, y1: y85, y2: y85, stroke: "var(--cyan)", "stroke-width": 3, "stroke-dasharray": "10 8" }, svg);
+    const pa = prepararTraco(el("path", { d: linha(c.map((p) => [x(p.semana), y(p.a)])), fill: "none", stroke: "var(--camiseta)", "stroke-width": 6, "stroke-linejoin": "round" }, svg));
+    const pb = prepararTraco(el("path", { d: linha(c.map((p) => [x(p.semana), y(p.b)])), fill: "none", stroke: "var(--acai)", "stroke-width": 6, "stroke-linejoin": "round" }, svg));
+    const marcas = [[R.cenarioA.p85, "var(--camiseta)"], [R.cenarioB.p85, "var(--acai)"]].map(([s, cor]) => {
+      const g = el("g", {}, svg);
+      el("line", { x1: x(s), x2: x(s), y1: y85, y2: y(0), stroke: cor, "stroke-width": 2.5, "stroke-dasharray": "6 6" }, g);
+      el("circle", { cx: x(s), cy: y85, r: 10, fill: cor }, g);
+      texto(g, x(s), y85 - 22, `${s} sem`, { "text-anchor": "middle", class: "rotulo-g", style: `fill:${cor}` });
+      return g;
+    });
+    return () => { surgir([ref]); desenhar([pa], { delay: 0.2 }); desenhar([pb], { delay: 0.9 }); surgir(marcas, { delay: M ? M.stagger(0.5, { startDelay: 1.8 }) : 0 }); };
+  };
+
+  graficos.dkw = () => {
+    const W = 1150, H = 330, m = { l: 210, r: 120, t: 10, b: 10 };
+    const svg = criarSvg("graficoDKW", W, H);
+    const ns = [100, 1000, 10000, 100000];
+    const eps = (n) => Math.sqrt(Math.log(2 / 0.05) / (2 * n));
+    const x = escala(0, eps(100), m.l, W - m.r);
+    const hb = (H - m.t - m.b) / ns.length;
+    const itens = ns.map((n, i) => {
+      const yy = m.t + i * hb + 12, e = eps(n), destaque = n === 10000;
+      texto(svg, m.l - 20, yy + hb / 2 - 2, `N = ${fmt(n)}`, { "text-anchor": "end", style: `font-size: 24px; fill: ${destaque ? "var(--ink)" : "var(--muted)"}; font-weight: 800` });
+      const r = el("rect", { x: m.l, y: yy, width: Math.max(4, x(e) - m.l), height: hb - 26, rx: 8, fill: destaque ? "var(--cyan)" : "#d6d3d1" }, svg);
+      const t = texto(svg, x(e) + 14, yy + hb / 2 - 2, `± ${fmt(e * 100, 2)} pp`, { class: "rotulo-g", style: `fill: ${destaque ? "var(--cyan-dark)" : "var(--muted)"}` });
+      return [r, t];
+    });
+    const barras = itens.map((i) => i[0]);
+    return () => {
+      if (M && !reduzido) {
+        barras.forEach((r) => { r.style.transformBox = "fill-box"; r.style.transformOrigin = "0 50%"; });
+        M.animate(barras, { transform: ["scaleX(0)", "scaleX(1)"] }, { duration: 0.8, ease: SAIDA, delay: M.stagger(0.18) });
+      }
+      surgir(itens.map((i) => i[1]), { delay: M ? M.stagger(0.18, { startDelay: 0.6 }) : 0 });
+    };
+  };
+
+  graficos.backtest = () => {
+    const W = 1050, H = 520, m = { l: 70, r: 20, t: 20, b: 60 };
+    const svg = criarSvg("graficoBacktest", W, H);
+    const bt = R.nest.backtest;
+    const j = bt.janelas.filter((w) => w.semana + bt.horizonte - 1 < bt.semanaRegime);
+    const xs = j.map((w) => w.semana);
+    const vals = j.flatMap((w) => [w.real, w.compromisso85, w.ingenuo]);
+    const x = escala(xs[0], xs.at(-1), m.l, W - m.r), y = escala(0, Math.max(...vals) * 1.1, H - m.b, m.t);
+    for (let v = 0; v <= 50; v += 10) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    xs.forEach((s) => texto(svg, x(s), H - m.b + 32, s, { "text-anchor": "middle" }));
+    texto(svg, W - m.r, H - 6, "semana inicial da previsão", { "text-anchor": "end" });
+    const serie = (k, cor, larg, tracejado) => prepararTraco(el("path", { d: linha(j.map((w) => [x(w.semana), y(w[k])])), fill: "none", stroke: cor, "stroke-width": larg, "stroke-linejoin": "round", ...(tracejado ? {} : {}) }, svg));
+    const pIng = serie("ingenuo", "var(--acai)", 4);
+    const p85 = serie("compromisso85", "var(--cyan)", 5);
+    const pReal = serie("real", "var(--ink)", 5);
+    const pts = j.map((w) => el("circle", { cx: x(w.semana), cy: y(w.real), r: 8, fill: w.real >= w.compromisso85 ? "var(--ink)" : "var(--alerta)", stroke: "#fff", "stroke-width": 3 }, svg));
+    return () => { desenhar([pReal]); desenhar([p85], { delay: 0.5 }); desenhar([pIng], { delay: 1 }); surgir(pts, { delay: M ? M.stagger(0.06, { startDelay: 1.2 }) : 0 }); };
+  };
+
+  graficos.regime = () => {
+    const W = 1200, H = 400, m = { l: 50, r: 10, t: 20, b: 50 };
+    const svg = criarSvg("graficoRegime", W, H);
+    const s = R.nest.semanal, reg = R.nest.backtest.semanaRegime;
+    const x = escala(0, s.length, m.l, W - m.r), y = escala(0, 60, H - m.b, m.t);
+    for (let v = 0; v <= 60; v += 20) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    const bw = (W - m.l - m.r) / s.length;
+    const barras = s.map((v, i) => el("rect", { x: x(i) + 2, y: y(v), width: bw - 4, height: Math.max(0, y(0) - y(v)), rx: 3, fill: i + 1 >= reg ? "var(--acai)" : "var(--camiseta)" }, svg));
+    const corte = el("line", { x1: x(reg - 1) - 1, x2: x(reg - 1) - 1, y1: m.t, y2: y(0), stroke: "var(--cyan)", "stroke-width": 4, "stroke-dasharray": "10 8" }, svg);
+    const rot = texto(svg, x(reg - 1) - 16, m.t + 24, "semana 44: novo regime", { "text-anchor": "end", class: "rotulo-g", style: "fill: var(--cyan-dark)" });
+    texto(svg, m.l, H - 12, "PRs humanos mergeados por semana no nestjs/nest (sem Renovate e Dependabot)", {});
+    return () => { crescer(barras, { delay: M ? M.stagger(0.018) : 0 }); surgir([corte, rot], { delay: 1.1 }); };
+  };
+
+  // ---------------------------------------------------------------------
+  // Efeitos que não são gráficos
+  // ---------------------------------------------------------------------
+  const efeitos = {};
+
+  efeitos.contadores = () => {};
+
+  efeitos.corrente = () => {
+    const box = document.getElementById("corrente");
+    box.innerHTML = "";
+    const elos = Array.from({ length: 10 }, () => { const d = document.createElement("div"); d.className = "elo"; d.textContent = "75%"; box.appendChild(d); return d; });
+    const prob = document.getElementById("probCorrente");
+    prob.textContent = "5,6%";
+    return () => {
+      if (!M || reduzido) return;
+      elos.forEach((e) => { e.style.background = "var(--branco)"; e.style.color = "var(--ink)"; });
+      M.animate(elos, { transform: ["scale(.6)", "scale(1)"], opacity: [0, 1] }, { duration: 0.4, delay: M.stagger(0.08), ease: SAIDA });
+      M.animate(0, 10, {
+        duration: 3, delay: 0.9, ease: "linear",
+        onUpdate: (v) => {
+          const k = Math.floor(v);
+          prob.textContent = `${fmt(Math.pow(0.75, Math.max(1, k)) * 100, 1)}%`;
+          elos.forEach((e, i) => { if (i < k) { e.style.background = "var(--ink)"; e.style.color = "var(--branco)"; } });
+        },
       });
-      overviewGrid.appendChild(card);
+    };
+  };
+
+  efeitos.pi = () => {
+    const cv = document.getElementById("canvasPi"), ctx = cv.getContext("2d");
+    const S = cv.width, TOTAL = 6000;
+    const est = document.getElementById("piEstimado"), cont = document.getElementById("piPontos");
+    // gerador com semente, igual ao motor TS
+    let a = 2026;
+    const rng = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const pontos = Array.from({ length: TOTAL }, () => [rng(), rng()]);
+    function moldura() {
+      ctx.clearRect(0, 0, S, S);
+      ctx.strokeStyle = "#1c1917"; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(0, S, S, -Math.PI / 2, 0); ctx.stroke();
+    }
+    function ate(n) {
+      moldura();
+      let dentro = 0;
+      for (let i = 0; i < n; i++) {
+        const [px, py] = pontos[i], d = px * px + py * py <= 1;
+        if (d) dentro++;
+        ctx.fillStyle = d ? "rgba(18,167,196,.75)" : "rgba(74,29,92,.45)";
+        ctx.beginPath(); ctx.arc(px * S, S - py * S, 6, 0, 7); ctx.fill();
+      }
+      est.textContent = n ? fmt((4 * dentro) / n, 4) : "0";
+      cont.textContent = fmt(n);
+    }
+    ate(TOTAL);
+    let raf = 0;
+    return () => {
+      cancelAnimationFrame(raf);
+      if (reduzido) return ate(TOTAL);
+      const t0 = performance.now(), dur = 4500;
+      const passo = (t) => {
+        const p = Math.min(1, (t - t0) / dur);
+        ate(Math.max(1, Math.round(TOTAL * p * p)));
+        if (p < 1) raf = requestAnimationFrame(passo);
+      };
+      raf = requestAnimationFrame(passo);
+    };
+  };
+
+  efeitos.codigo = () => {
+    const linhas = [...document.querySelectorAll("#codigoMC .ln")];
+    const foco = [[3], [5, 6, 7], [9], [11]];
+    let timer = 0;
+    return () => {
+      clearInterval(timer);
+      if (reduzido) return;
+      let i = 0;
+      const marcar = () => {
+        linhas.forEach((l) => l.classList.remove("on"));
+        foco[i % foco.length].forEach((n) => linhas[n].classList.add("on"));
+        i++;
+        if (i > foco.length) { clearInterval(timer); linhas.forEach((l) => l.classList.remove("on")); }
+      };
+      timer = setInterval(marcar, 1300);
+      setTimeout(marcar, 700);
+    };
+  };
+
+  efeitos.formula = () => () => {};
+
+  // Registra os efeitos de cada slide (gráficos já ficam desenhados para o PDF)
+  const animadores = slides.map((s) => {
+    const fx = s.dataset.fx;
+    const criar = graficos[fx] ?? efeitos[fx];
+    return criar ? criar() : null;
+  });
+
+  // ---------------------------------------------------------------------
+  // Contadores numéricos (data-count)
+  // ---------------------------------------------------------------------
+  function contar(slide) {
+    slide.querySelectorAll("[data-count]").forEach((e) => {
+      const alvo = parseFloat(e.dataset.count), dec = parseInt(e.dataset.dec ?? "0", 10);
+      e.textContent = fmt(alvo, dec);
+      if (!M || reduzido) return;
+      M.animate(0, alvo, { duration: 1.4, delay: 0.5, ease: SAIDA, onUpdate: (v) => { e.textContent = fmt(v, dec); } });
     });
   }
 
-  function updateOverviewActive() {
-    const cards = overviewGrid.querySelectorAll('.overview-card');
-    cards.forEach((c, i) => c.classList.toggle('is-active', i === current));
+  // ---------------------------------------------------------------------
+  // Entrada do slide com Motion
+  // ---------------------------------------------------------------------
+  function entrar(i) {
+    const s = slides[i];
+    contar(s);
+    if (M && !reduzido) {
+      const titulo = s.querySelector(".titulo"), ressalva = s.querySelector(".ressalva");
+      M.animate(titulo, { opacity: [0, 1], transform: ["translateY(28px)", "translateY(0)"], filter: ["blur(8px)", "blur(0px)"] }, { duration: 0.7, ease: SAIDA });
+      if (ressalva) M.animate(ressalva, { opacity: [0, 1], transform: ["translateX(-24px)", "translateX(0)"] }, { duration: 0.6, delay: 0.3, ease: SAIDA });
+      const itens = s.querySelectorAll("[data-anim]");
+      if (itens.length) M.animate(itens, { opacity: [0, 1], transform: ["translateY(22px)", "translateY(0)"] }, { duration: 0.55, ease: SAIDA, delay: M.stagger(0.09, { startDelay: 0.45 }) });
+      const av = s.querySelector(".avatar");
+      if (av) M.animate(av, { opacity: [0, 1], transform: ["translateY(90px) rotate(-6deg)", "translateY(0) rotate(0deg)"] }, { type: "spring", bounce: 0.35, duration: 0.9, delay: 0.25 });
+      const ass = s.querySelector(".assinatura");
+      if (ass) M.animate(ass, { opacity: [0, 1] }, { duration: 0.6, delay: 0.6 });
+    }
+    animadores[i]?.();
   }
 
-  function toggleOverview() {
-    const isOpen = overviewModal.classList.toggle('is-open');
-    if (isOpen) buildOverview();
+  // ---------------------------------------------------------------------
+  // Navegação
+  // ---------------------------------------------------------------------
+  const deck = document.getElementById("deck");
+  const contador = document.getElementById("contador");
+  const progresso = document.getElementById("progresso");
+  let atual = 0;
+
+  function ajustar() {
+    const k = Math.min(innerWidth / 1920, (innerHeight - 56) / 1080);
+    deck.style.transform = `translate(-50%, -50%) scale(${k})`;
   }
+  function mostrar(i) {
+    atual = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, k) => s.classList.toggle("is-active", k === atual));
+    contador.textContent = `${atual + 1} / ${slides.length}`;
+    progresso.style.width = `${((atual + 1) / slides.length) * 100}%`;
+    history.replaceState(null, "", `#${atual + 1}`);
+    entrar(atual);
+  }
+  const telaCheia = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
 
-  document.getElementById('btnOverview').addEventListener('click', toggleOverview);
-  document.getElementById('btnCloseOverview').addEventListener('click', toggleOverview);
+  addEventListener("resize", ajustar);
+  addEventListener("hashchange", () => {
+    const n = parseInt(location.hash.slice(1), 10);
+    if (Number.isFinite(n) && n - 1 !== atual) mostrar(n - 1);
+  });
+  addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); mostrar(atual + 1); }
+    else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); mostrar(atual - 1); }
+    else if (e.key === "Home") mostrar(0);
+    else if (e.key === "End") mostrar(slides.length - 1);
+    else if (e.key.toLowerCase() === "r") entrar(atual);
+    else if (e.key.toLowerCase() === "f") telaCheia();
+    else if (e.key.toLowerCase() === "p") print();
+  });
+  document.getElementById("btnProximo").onclick = () => mostrar(atual + 1);
+  document.getElementById("btnAnterior").onclick = () => mostrar(atual - 1);
+  document.getElementById("btnRepetir").onclick = () => entrar(atual);
+  document.getElementById("btnTela").onclick = telaCheia;
 
-  showSlide(0);
+  ajustar();
+  const inicial = parseInt(location.hash.slice(1), 10);
+  mostrar(Number.isFinite(inicial) ? inicial - 1 : 0);
 })();
 </script>
 </body>
