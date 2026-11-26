@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Simulação de Monte Carlo para previsão de prazos de software — Fábio Brasileiro e José Roberto">
+<title>Monte Carlo — versão curta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Fontes do design system Fábio Brasileiro (locais, funcionam offline) */
+@font-face { font-family: "Gaegu"; src: url("./fonts/Gaegu-Bold.ttf") format("truetype"); font-weight: 700; }
+@font-face { font-family: "Itim"; src: url("./fonts/Itim-Regular.ttf") format("truetype"); font-weight: 400; }
+
+:root {
+  --ink: #1c1917;
+  --cyan: #12a7c4;
+  --cyan-dark: #0b7186;
+  --cyan-soft: #e3f6fa;
+  --muted: #78716c;
+  --paper: #fbfaf7;
+  --branco: #ffffff;
+  --line: #e7e2da;
+  --camiseta: #1f2b47;
+  --acai: #4a1d5c;
+  --acai-soft: #f3ecf6;
+  --pele: #e8b897;
+  --blush: #f08a9a;
+  --alerta: #c2410c;
+
+  /* Regra das frases: Gaegu (primária) sem acento, Itim (secundária) com acento */
+  --font-gaegu: "Gaegu", "Itim", cursive;
+  --font-hand: "Itim", cursive;
+  --font-text: "Nunito", system-ui, sans-serif;
+  --font-code: "JetBrains Mono", "JetBrainsMono Nerd Font", ui-monospace, monospace;
+
+  --radius-card: 14px;
+  --radius-pill: 999px;
+  --shadow-slide: 0 16px 40px -16px rgba(0, 0, 0, 0.14);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-text); -webkit-font-smoothing: antialiased;
+}
+
+/* Palco 16:9 */
+.stage { position: fixed; inset: 0 0 56px 0; }
+.deck {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%) scale(0.6);
+}
+.slide {
+  position: absolute; inset: 0;
+  background: var(--branco);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-slide);
+  overflow: hidden;
+  display: none;
+}
+.slide.is-active { display: block; }
+
+/* A fórmula: afirmação grande + ressalva ciano */
+.head { position: absolute; left: 110px; top: 72px; right: 520px; z-index: 5; }
+.titulo {
+  font-family: var(--font-hand); font-weight: 400;
+  font-size: 104px; line-height: 1; letter-spacing: -1px; color: var(--ink);
+}
+.ressalva { font-family: var(--font-hand); font-size: 48px; line-height: 1.15; color: var(--cyan); margin-top: 10px; }
+.sem-acento .titulo, .sem-acento .ressalva { font-family: var(--font-gaegu); font-weight: 700; }
+.sem-acento .titulo { font-size: 116px; }
+.sem-acento .ressalva { font-size: 54px; }
+
+.assinatura {
+  position: absolute; left: 110px; bottom: 54px; z-index: 5;
+  font-family: var(--font-hand); font-size: 34px; color: var(--ink);
+}
+.assinatura small {
+  font-family: var(--font-text); font-size: 17px; font-weight: 700;
+  color: var(--muted); margin-left: 16px; letter-spacing: .4px;
+}
+.assinatura.rotulo small { margin-left: 0; }
+.avatar {
+  position: absolute; right: 30px; bottom: -20px; width: 470px;
+  mix-blend-mode: multiply; pointer-events: none; z-index: 4;
+  transform-origin: 50% 100%;
+}
+.avatar.sm { width: 330px; right: 10px; }
+
+/* Área de conteúdo */
+.body { position: absolute; left: 110px; right: 110px; top: 300px; bottom: 140px; z-index: 3; }
+.body.com-avatar { right: 520px; }
+.body.baixo { top: 340px; }
+
+.lede { font-size: 30px; line-height: 1.45; color: #44403c; max-width: 1100px; }
+.lede strong { color: var(--ink); }
+.nota { font-size: 20px; color: var(--muted); line-height: 1.5; }
+.hand { font-family: var(--font-hand); }
+.cyan { color: var(--cyan); }
+.acai { color: var(--acai); }
+.mono { font-family: var(--font-code); }
+
+.row { display: flex; gap: 36px; }
+.col { display: flex; flex-direction: column; gap: 22px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
+
+.card {
+  background: var(--branco); border: 1.5px solid var(--line);
+  border-radius: var(--radius-card); padding: 26px 30px;
+}
+.card h3 { font-family: var(--font-hand); font-weight: 400; font-size: 32px; line-height: 1.15; margin-bottom: 10px; }
+.card p, .card li { font-size: 21px; line-height: 1.5; color: #44403c; }
+.card ul { margin-left: 22px; }
+.card.destaque { border-color: var(--cyan); box-shadow: 0 0 0 5px var(--cyan-soft); }
+.card.acai-b { border-color: var(--acai); box-shadow: 0 0 0 5px var(--acai-soft); }
+
+.num { font-family: var(--font-hand); font-size: 92px; line-height: 1; color: var(--ink); }
+.num.cyan { color: var(--cyan); }
+.rotulo { font-size: 19px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+
+.pill {
+  display: inline-block; padding: 7px 18px; border-radius: var(--radius-pill);
+  font-size: 17px; font-weight: 800; letter-spacing: .5px;
+  background: var(--cyan-soft); color: var(--cyan-dark);
+}
+.pill.acai { background: var(--acai-soft); color: var(--acai); }
+
+/* Terminal */
+.terminal {
+  background: #16181d; color: #e7e5e4; border-radius: var(--radius-card);
+  padding: 22px 30px 26px; font-family: var(--font-code); font-size: 21px; line-height: 1.6;
+  box-shadow: 0 18px 40px -18px rgba(0,0,0,.45);
+}
+.terminal .bar { display: flex; gap: 9px; margin-bottom: 16px; align-items: center; }
+.terminal .bar i { width: 13px; height: 13px; border-radius: 50%; background: #3f3f46; display: block; }
+.terminal .bar span { margin-left: 12px; color: #a8a29e; font-size: 16px; }
+.terminal pre { font-family: inherit; white-space: normal; }
+.terminal .ln { display: block; white-space: pre; padding: 0 8px; margin: 0 -8px; border-radius: 6px; }
+.terminal .ln.on { background: rgba(18, 167, 196, .22); }
+.kw { color: #f0abfc; } .fn { color: #7dd3fc; } .nm { color: #fcd34d; } .cm { color: #78716c; font-style: italic; } .st { color: #86efac; } .ty { color: #5eead4; }
+
+/* Painel de debug (slide 7) */
+.debug {
+  flex: 1; background: #1e2128; color: #e7e5e4; border-radius: var(--radius-card);
+  padding: 22px 28px; font-family: var(--font-code); font-size: 22px;
+  box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 8px;
+}
+.debug-cab { font-size: 16px; color: #a8a29e; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+.debug-cab .ponto { width: 12px; height: 12px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 4px rgba(18,167,196,.25); }
+.debug .var { display: flex; align-items: baseline; gap: 14px; padding: 3px 10px; margin: 0 -10px; border-radius: 6px; }
+.debug .k { color: #7dd3fc; min-width: 150px; }
+.debug .v { color: #fcd34d; font-weight: 600; min-width: 90px; }
+.debug .d { color: #78716c; font-size: 16px; }
+.debug .var.flash { background: rgba(18,167,196,.25); }
+.barra-backlog { height: 14px; background: #2e323b; border-radius: 7px; overflow: hidden; margin: 4px 0 8px; }
+.barra-backlog i { display: block; height: 100%; background: var(--cyan); border-radius: 7px; transition: width .25s ease; }
+.debug-sub { font-size: 15px; color: #78716c; margin-top: 6px; }
+.chips { display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; }
+.chips span { text-align: center; font-size: 17px; padding: 4px 0; border-radius: 5px; background: #2e323b; color: #d6d3d1; transition: background .15s, color .15s; }
+.chips span.on { background: var(--cyan); color: #0c1a1f; font-weight: 700; }
+.resultados { font-size: 18px; color: #86efac; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.debug-final { margin-top: auto; padding-top: 10px; border-top: 1px solid #2e323b; font-size: 21px; color: #d6d3d1; }
+.debug-final b { color: var(--cyan); }
+
+/* Gráficos */
+.chart { width: 100%; height: 100%; overflow: visible; }
+.chart text { font-family: var(--font-text); fill: var(--muted); font-size: 18px; font-weight: 600; }
+.chart .eixo { stroke: #d6d3d1; stroke-width: 1.5; }
+.chart .grade { stroke: #f0ede8; stroke-width: 1; }
+.chart .rotulo-g { font-family: var(--font-hand); font-size: 26px; font-weight: 400; }
+.legenda { display: flex; gap: 28px; font-size: 19px; font-weight: 700; color: #57534e; margin-top: 8px; }
+.legenda i { display: inline-block; width: 26px; height: 6px; border-radius: 3px; vertical-align: middle; margin-right: 8px; }
+
+/* Fórmula */
+.formula { font-family: var(--font-code); font-size: 38px; color: var(--ink); line-height: 1.5; }
+.formula .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 6px; font-size: 32px; }
+.formula .frac span:first-child { border-bottom: 3px solid var(--ink); padding: 0 6px; }
+.passo { font-family: var(--font-code); font-size: 30px; color: #44403c; }
+.passo b { color: var(--cyan-dark); }
+
+/* Tabela */
+.tabela { width: 100%; border-collapse: collapse; font-size: 22px; }
+.tabela th { text-align: left; font-family: var(--font-hand); font-weight: 400; font-size: 27px; padding: 14px 18px; border-bottom: 2px solid var(--ink); }
+.tabela td { padding: 15px 18px; border-bottom: 1px solid var(--line); color: #44403c; vertical-align: top; line-height: 1.4; }
+.tabela td:first-child { font-weight: 800; color: var(--ink); white-space: nowrap; }
+.tabela tr.mc td { background: var(--cyan-soft); }
+
+/* Corrente de dependências (0,75^10) */
+.corrente { display: flex; gap: 14px; align-items: center; }
+.elo {
+  width: 104px; height: 104px; border-radius: 18px; border: 3px solid var(--ink);
+  display: grid; place-items: center; font-family: var(--font-hand); font-size: 30px; background: var(--branco);
+}
+
+/* Barra inferior */
+.controls {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 56px;
+  background: var(--branco); border-top: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 50;
+}
+.controls .grupo { display: flex; gap: 10px; align-items: center; }
+.btn {
+  background: var(--branco); border: 1px solid var(--line); color: var(--ink);
+  padding: 7px 16px; border-radius: var(--radius-pill);
+  font: 700 14px var(--font-text); cursor: pointer;
+}
+.btn:hover { background: var(--ink); color: var(--branco); }
+.contador { font-family: var(--font-hand); font-size: 22px; min-width: 70px; text-align: center; }
+.dica { font-size: 13px; color: var(--muted); }
+.progresso { position: fixed; top: 0; left: 0; height: 4px; background: var(--cyan); z-index: 60; width: 0; transition: width .3s; }
+
+/* Tela cheia: só o slide, sem barra, progresso nem cursor parado */
+body.cheia { background: var(--branco); }
+body.cheia .controls, body.cheia .progresso { display: none; }
+body.cheia .stage { inset: 0; }
+body.cheia .slide { border-radius: 0; box-shadow: none; }
+body.cheia.cursor-oculto, body.cheia.cursor-oculto * { cursor: none; }
+
+@page { size: 1920px 1080px; margin: 0; }
+@media print {
+  html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+  .controls, .progresso { display: none !important; }
+  .stage, .deck { position: static !important; transform: none !important; width: 1920px; height: auto; }
+  .slide {
+    position: relative !important; display: block !important;
+    width: 1920px; height: 1080px; border-radius: 0; box-shadow: none;
+    break-after: page;
+  }
+  /* No PDF tudo aparece no estado final, sem depender da animação */
+  .slide * { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .slide .avatar { transform: none !important; }
+}
+@media (prefers-reduced-motion: reduce) { .progresso { transition: none; } }
+</style>
+</head>
+<body>
+<div class="progresso" id="progresso"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- 1 · capa -->
+<section class="slide" data-fx="contadores">
+  <div class="head">
+    <h1 class="titulo">previsão de prazos com monte carlo</h1>
+    <div class="ressalva">(porque estimar em horas é puro palpite)</div>
+  </div>
+  <div class="body com-avatar baixo" style="top: 420px;">
+    <p class="lede" data-anim>Tema 7 da Unidade VI: simular <strong>dez mil futuros possíveis</strong> a partir do que a equipe já entregou, e prometer prazos com probabilidade declarada.</p>
+    <div class="grid3" style="margin-top: 56px; max-width: 1150px;">
+      <div data-anim><div class="num" data-count="10000">10.000</div><div class="rotulo">futuros simulados</div></div>
+      <div data-anim><div class="num" data-count="26">26</div><div class="rotulo">semanas de histórico</div></div>
+      <div data-anim><div class="num cyan" data-count="572">572</div><div class="rotulo">PRs reais do NestJS</div></div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro e José Roberto <small>Prof. Alexsand Farias de Souza · Métricas e Estimativas</small></div>
+  <img class="avatar" src="./assets/avatar-giz-oi.jpg" alt="Fábio dando oi">
+</section>
+
+<!-- 2 · a pergunta -->
+<section class="slide">
+  <div class="head">
+    <h2 class="titulo">quando fica pronto?</h2>
+    <div class="ressalva">(a pergunta que todo gerente faz)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="col" style="gap: 30px; margin-top: 30px;">
+      <p class="lede" data-anim>As respostas de sempre:</p>
+      <div class="card" data-anim><h3>"umas 15 semanas"</h3><p>Soma de horas ou de story points. Um número só, sem dizer o risco.</p></div>
+      <div class="card" data-anim><h3>"depende"</h3><p>Verdade, mas não ajuda ninguém a planejar.</p></div>
+      <div class="card destaque" data-anim><h3>"17 semanas, com 85% de chance"</h3><p>A resposta do Monte Carlo: <strong>prazo + probabilidade</strong>, calculados do histórico real.</p></div>
+    </div>
+  </div>
+  <div class="assinatura rotulo"><small>O problema</small></div>
+  <img class="avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+</section>
+
+<!-- 3 · média e dependências -->
+<section class="slide" data-fx="corrente">
+  <div class="head">
+    <h2 class="titulo">a média é uma ilusão</h2>
+    <div class="ressalva">(e a velocity mente com classe)</div>
+  </div>
+  <div class="body com-avatar">
+    <p class="lede" data-anim>Dez tarefas em sequência, cada uma com <strong>75% de chance</strong> de sair no prazo estimado. Qual a chance de <strong>todas</strong> saírem?</p>
+    <div class="corrente" id="corrente" style="margin-top: 48px;"></div>
+    <div class="row" style="margin-top: 52px; align-items: flex-end; gap: 60px;">
+      <div><div class="num cyan" id="probCorrente">75,0%</div><div class="rotulo">chance da cadeia inteira</div></div>
+      <div class="formula" data-anim style="padding-bottom: 14px;">P = 0,75<sup>10</sup> ≈ 5,63%</div>
+    </div>
+    <p class="nota" data-anim style="margin-top: 34px;">Savage chama de <em>Flaw of Averages</em>: E[f(X)] ≠ f(E[X]). Planos feitos com médias atrasam por construção.</p>
+  </div>
+  <div class="assinatura rotulo"><small>Temas 1 e 2 · story points e velocity</small></div>
+  <img class="avatar" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+</section>
+
+<!-- 4 · throughput -->
+<section class="slide" data-fx="barrasHistorico">
+  <div class="head">
+    <h2 class="titulo">conte itens concluídos</h2>
+    <div class="ressalva">(throughput não aceita debate filosófico)</div>
+  </div>
+  <div class="body com-avatar">
+    <div style="height: 430px;" id="graficoHistorico"></div>
+    <div class="grid4" style="margin-top: 26px;">
+      <div data-anim><div class="num" style="font-size: 64px;" data-count="102">102</div><div class="rotulo">itens entregues</div></div>
+      <div data-anim><div class="num" style="font-size: 64px;" data-count="3.92" data-dec="2">3,92</div><div class="rotulo">média por semana</div></div>
+      <div data-anim><div class="num" style="font-size: 64px;" data-count="1.49" data-dec="2">1,49</div><div class="rotulo">desvio padrão</div></div>
+      <div data-anim><div class="num cyan" style="font-size: 64px;">1 a 7</div><div class="rotulo">amplitude</div></div>
+    </div>
+  </div>
+  <div class="assinatura rotulo"><small>Temas 3 e 4 · throughput, WIP e Lei de Little</small></div>
+  <img class="avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+<!-- 5 · código -->
+<section class="slide" data-fx="codigo">
+  <div class="head">
+    <h2 class="titulo">leia o código-fonte</h2>
+    <div class="ressalva">(o algoritmo cabe em quinze linhas)</div>
+  </div>
+  <div class="body">
+    <div class="row" style="gap: 50px;">
+      <div class="terminal" data-anim style="flex: 0 0 980px;">
+        <div class="bar"><i></i><i></i><i></i><span>src/monte-carlo.ts · bun test → 15 pass</span></div>
+<pre id="codigoMC"><span class="ln"><span class="kw">export function</span> <span class="fn">simularQuando</span>(historico: <span class="ty">number</span>[], backlog: <span class="ty">number</span>) {</span>
+<span class="ln">  <span class="kw">const</span> rng = <span class="fn">criarRng</span>(<span class="nm">42</span>); <span class="cm">// semente fixa: reprodutível</span></span>
+<span class="ln">  <span class="kw">const</span> resultados: <span class="ty">number</span>[] = [];</span>
+<span class="ln">  <span class="kw">for</span> (<span class="kw">let</span> r = <span class="nm">0</span>; r &lt; <span class="nm">10_000</span>; r++) {</span>
+<span class="ln">    <span class="kw">let</span> restante = backlog, semanas = <span class="nm">0</span>;</span>
+<span class="ln">    <span class="kw">while</span> (restante &gt; <span class="nm">0</span>) {</span>
+<span class="ln">      semanas++;</span>
+<span class="ln">      restante -= <span class="fn">sortear</span>(historico, rng); <span class="cm">// com reposição</span></span>
+<span class="ln">    }</span>
+<span class="ln">    resultados.<span class="fn">push</span>(semanas);</span>
+<span class="ln">  }</span>
+<span class="ln">  <span class="kw">return</span> resultados; <span class="cm">// depois: P50, P85, P95</span></span>
+<span class="ln">}</span></pre>
+      </div>
+      <div class="debug" data-anim>
+        <div class="debug-cab"><span class="ponto"></span>debug · <span id="dbgEstado">pausado</span></div>
+        <div class="var"><span class="k">r</span><span class="v" id="dbgR">10.000</span><span class="d">iteração</span></div>
+        <div class="var"><span class="k">semanas</span><span class="v" id="dbgSemanas">16</span></div>
+        <div class="var"><span class="k">sorteado</span><span class="v" id="dbgSorteado">—</span><span class="d" id="dbgOrigem">do histórico</span></div>
+        <div class="var"><span class="k">restante</span><span class="v" id="dbgRestante">0</span><span class="d">de 60</span></div>
+        <div class="barra-backlog"><i id="dbgBarra" style="width: 0%"></i></div>
+        <div class="debug-sub">historico[26] · sorteio com reposição</div>
+        <div class="chips" id="dbgChips"></div>
+        <div class="debug-sub">resultados</div>
+        <div class="resultados" id="dbgResultados">[16, 16, 15, 17, …]</div>
+        <div class="debug-final" id="dbgFinal">P50 <b>16</b> · P85 <b>17</b> · P95 <b>18</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura rotulo"><small>Implementação · mesma semente do motor, valores reais da 1ª iteração</small></div>
+</section>
+
+<!-- 6 · trajetórias -->
+<section class="slide" data-fx="trajetorias">
+  <div class="head" style="right: 110px;">
+    <h2 class="titulo">um futuro por linha</h2>
+    <div class="ressalva">(cada linha zera o backlog em uma semana diferente)</div>
+  </div>
+  <div class="body" style="right: 470px;">
+    <div style="height: 560px;" id="graficoTrajetorias"></div>
+    <div class="legenda"><span><i style="background: var(--camiseta); opacity: .5"></i>60 trajetórias simuladas de burn-down</span><span><i style="background: var(--cyan)"></i>onde cada uma terminou</span></div>
+  </div>
+  <div class="assinatura rotulo"><small>Tema 6 · um burndown probabilístico</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-codando.jpg" alt="Fábio codando">
+</section>
+
+<!-- 7 · histograma e percentis -->
+<section class="slide" data-fx="histograma">
+  <div class="head">
+    <h2 class="titulo">p50 é cara ou coroa</h2>
+    <div class="ressalva">(assuma compromissos com o p85)</div>
+  </div>
+  <div class="body com-avatar" style="right: 500px;">
+    <div class="row" style="gap: 40px; height: 100%;">
+      <div style="flex: 1; height: 560px;" id="graficoHistograma"></div>
+      <div class="col" style="flex: 0 0 300px; gap: 26px; justify-content: center;">
+        <div data-anim><div class="num" style="font-size: 76px;"><span data-count="16">16</span> sem</div><div class="rotulo">P50 · 72% de chance</div></div>
+        <div data-anim><div class="num cyan" style="font-size: 76px;"><span data-count="17">17</span> sem</div><div class="rotulo">P85 · 89% · compromisso</div></div>
+        <div data-anim><div class="num acai" style="font-size: 76px;"><span data-count="18">18</span> sem</div><div class="rotulo">P95 · 97% · multa</div></div>
+        <p class="nota" data-anim style="font-size: 18px;">% = chance real de terminar até o prazo. A mediana divide os futuros ao meio; com semanas inteiras, o degrau arredonda a favor (até 15 semanas: 46%).</p>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura rotulo"><small>Resultado · backlog de 60 itens</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+<!-- 8 · curva S e scope creep -->
+<section class="slide" data-fx="curvaS">
+  <div class="head">
+    <h2 class="titulo">o escopo sempre cresce</h2>
+    <div class="ressalva">(monte carlo precifica a incerteza)</div>
+  </div>
+  <div class="body com-avatar" style="right: 480px;">
+    <div class="row" style="gap: 44px;">
+      <div style="flex: 1; height: 560px;" id="graficoCurvaS"></div>
+      <div class="col" style="flex: 0 0 330px; justify-content: center; gap: 30px;">
+        <div data-anim><div class="num" style="font-size: 76px;">17 → <span class="acai">21</span></div><div class="rotulo">P85 em semanas</div></div>
+        <p class="lede" data-anim style="font-size: 25px;">Com <strong>+0,65 item novo por semana</strong>, o mesmo nível de confiança custa <strong>4 semanas a mais</strong>.</p>
+        <p class="nota" data-anim>A conversa com o cliente deixa de ser opinião e vira conta.</p>
+      </div>
+    </div>
+    <div class="legenda"><span><i style="background: var(--camiseta)"></i>escopo fixo</span><span><i style="background: var(--acai)"></i>com scope creep</span><span><i style="background: var(--cyan)"></i>linha de 85%</span></div>
+  </div>
+  <div class="assinatura rotulo"><small>Curva S · Tema 5 mostra o gargalo, Monte Carlo o prazo</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-acai.jpg" alt="Fábio tomando açaí">
+</section>
+
+<!-- 9 · backtest nestjs -->
+<section class="slide" data-fx="backtest">
+  <div class="head" style="right: 110px;">
+    <h2 class="titulo">testei no mundo real</h2>
+    <div class="ressalva">(nestjs/nest, 572 PRs reais, 52 semanas)</div>
+  </div>
+  <div class="body" style="right: 440px;">
+    <div class="row" style="gap: 50px;">
+      <div style="flex: 1; height: 520px;" id="graficoBacktest"></div>
+      <div class="col" style="flex: 0 0 300px; gap: 22px; justify-content: center;">
+        <div data-anim><div class="num cyan" style="font-size: 80px;"><span data-count="83.3" data-dec="1">83,3</span>%</div><div class="rotulo">P85 cumprido</div></div>
+        <div data-anim><div class="num" style="font-size: 80px;"><span data-count="50" data-dec="1">50,0</span>%</div><div class="rotulo">mediana cumprida</div></div>
+        <div data-anim><div class="num acai" style="font-size: 80px;"><span data-count="41.7" data-dec="1">41,7</span>%</div><div class="rotulo">média × semanas</div></div>
+      </div>
+    </div>
+    <div class="legenda"><span><i style="background: var(--ink)"></i>PRs entregues nas 6 semanas</span><span><i style="background: var(--cyan)"></i>compromisso P85</span><span><i style="background: var(--acai)"></i>média × 6 (velocity)</span></div>
+  </div>
+  <div class="assinatura rotulo"><small>Backtest rolante · período estável, 12 janelas</small></div>
+  <img class="avatar sm" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+<!-- 10 · conclusão -->
+<section class="slide">
+  <div class="head">
+    <h2 class="titulo">previsibilidade sem chute</h2>
+    <div class="ressalva">(estatística vence adivinhação)</div>
+  </div>
+  <div class="body com-avatar">
+    <div class="grid4" style="gap: 24px;">
+      <div class="card" data-anim><div class="num cyan" style="font-size: 60px;">1</div><h3>limite o WIP</h3><p>Fluxo estável primeiro.</p></div>
+      <div class="card" data-anim><div class="num cyan" style="font-size: 60px;">2</div><h3>conte por semana</h3><p>20 a 30 semanas de throughput.</p></div>
+      <div class="card" data-anim><div class="num cyan" style="font-size: 60px;">3</div><h3>simule 10.000</h3><p>Com e sem scope creep.</p></div>
+      <div class="card destaque" data-anim><div class="num cyan" style="font-size: 60px;">4</div><h3>prometa o P85</h3><p>P95 se houver multa.</p></div>
+    </div>
+    <div class="row" style="margin-top: 60px; align-items: flex-end; gap: 70px;">
+      <div data-anim>
+        <div class="hand" style="font-size: 64px;">obrigado!</div>
+        <div class="nota" style="margin-top: 6px;">Artigo, motor TypeScript, testes e dados no repositório:</div>
+        <div class="mono" style="font-size: 22px; color: var(--cyan-dark); margin-top: 6px;">github.com/fabiobrasileiroo/metricas-estimativas-software-monte-carlo</div>
+      </div>
+    </div>
+  </div>
+  <div class="assinatura">Fábio Brasileiro e José Roberto <small>@fabiobrasileiroo</small></div>
+  <img class="avatar" src="./assets/avatar-giz-joinha.jpg" alt="Fábio dando joinha">
+</section>
+
+</div>
+</div>
+
+<nav class="controls" aria-label="Controles da apresentação">
+  <div class="grupo">
+    <button class="btn" id="btnAnterior">anterior</button>
+    <span class="contador" id="contador">1 / 17</span>
+    <button class="btn" id="btnProximo">próximo</button>
+  </div>
+  <span class="dica">setas navegam · R repete a animação · F tela cheia · P imprime</span>
+  <div class="grupo">
+    <button class="btn" id="btnRepetir">repetir animação</button>
+    <button class="btn" id="btnTela">tela cheia</button>
+  </div>
+</nav>
+
+<script src="./vendor/motion.js"></script>
+<script src="./resultados/resultados.js"></script>
+<script>
+(() => {
+  const R = window.RESULTADOS;
+  const M = window.Motion;
+  const reduzido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const imprimindo = matchMedia("print").matches;
+  const slides = [...document.querySelectorAll(".slide")];
+  const fmt = (x, d = 0) => x.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const SAIDA = [0.22, 1, 0.36, 1];
+
+  // ---------------------------------------------------------------------
+  // Regra de fontes: frase sem acento -> Gaegu Bold; com acento -> Itim.
+  // Decide pela frase inteira (título + ressalva), como no design system.
+  // ---------------------------------------------------------------------
+  const temAcento = (t) => /[^\x00-\x7F]/.test(t.replace(/[²³ªº—–→·×≈]/g, ""));
+  slides.forEach((s) => {
+    const frase = (s.querySelector(".titulo")?.textContent ?? "") + (s.querySelector(".ressalva")?.textContent ?? "");
+    s.classList.toggle("sem-acento", !temAcento(frase));
+  });
+
+  // ---------------------------------------------------------------------
+  // Utilidades SVG
+  // ---------------------------------------------------------------------
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs = {}, pai) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (pai) pai.appendChild(e);
+    return e;
+  }
+  function criarSvg(id, w, h) {
+    const box = document.getElementById(id);
+    box.innerHTML = "";
+    return el("svg", { viewBox: `0 0 ${w} ${h}`, class: "chart", preserveAspectRatio: "none" }, box);
+  }
+  function escala(d0, d1, r0, r1) { return (v) => r0 + ((v - d0) / (d1 - d0)) * (r1 - r0); }
+  function linha(pontos) { return pontos.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" "); }
+  function texto(svg, x, y, t, attrs = {}) { const e = el("text", { x, y, ...attrs }, svg); e.textContent = t; return e; }
+  function prepararTraco(path) {
+    // comprimento normalizado em 1: todas as linhas animam de 1 a 0
+    path.setAttribute("pathLength", 1);
+    path.style.strokeDasharray = 1;
+    return path;
+  }
+  function desenhar(paths, opcoes = {}) {
+    if (!M || reduzido) return;
+    // keyframes explícitos: repetir (R) ou voltar ao slide no meio da animação não deixa a linha presa invisível
+    M.animate(paths, { strokeDashoffset: [1, 0] }, { duration: 1.2, ease: SAIDA, ...opcoes });
+  }
+  function crescer(rects, opcoes = {}) {
+    if (!M || reduzido) return;
+    rects.forEach((r) => { r.style.transformBox = "fill-box"; r.style.transformOrigin = "50% 100%"; });
+    M.animate(rects, { transform: ["scaleY(0)", "scaleY(1)"] }, { duration: 0.7, ease: SAIDA, delay: M.stagger(0.025), ...opcoes });
+  }
+  function surgir(els, opcoes = {}) {
+    if (!M || reduzido || !els.length) return;
+    M.animate(els, { opacity: [0, 1], transform: ["translateY(14px)", "translateY(0)"] }, { duration: 0.5, ease: SAIDA, ...opcoes });
+  }
+
+  // ---------------------------------------------------------------------
+  // Gráficos (desenhados completos; a animação só os "redesenha")
+  // ---------------------------------------------------------------------
+  const graficos = {};
+
+  graficos.barrasHistorico = () => {
+    const W = 1200, H = 430, m = { l: 50, r: 10, t: 20, b: 50 };
+    const svg = criarSvg("graficoHistorico", W, H);
+    const h = R.historico, mx = 8;
+    const x = escala(0, h.length, m.l, W - m.r), y = escala(0, mx, H - m.b, m.t);
+    for (let v = 0; v <= mx; v += 2) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    const bw = (W - m.l - m.r) / h.length;
+    const barras = h.map((v, i) => el("rect", { x: x(i) + 5, y: y(v), width: bw - 10, height: y(0) - y(v), rx: 5, fill: "var(--camiseta)" }, svg));
+    const ym = y(R.estatisticas.media);
+    const media = prepararTraco(el("path", { d: `M${m.l},${ym} L${W - m.r},${ym}`, stroke: "var(--cyan)", "stroke-width": 4, "stroke-dasharray": "0", fill: "none" }, svg));
+    const rot = texto(svg, W - m.r, ym - 12, "média 3,92", { "text-anchor": "end", class: "rotulo-g", fill: "var(--cyan)", style: "fill: var(--cyan)" });
+    texto(svg, (W) / 2, H - 10, "26 semanas consecutivas", { "text-anchor": "middle" });
+    return () => { crescer(barras); desenhar([media], { delay: 0.8 }); surgir([rot], { delay: 1.6 }); };
+  };
+
+  graficos.trajetorias = () => {
+    const W = 1300, H = 560, m = { l: 60, r: 20, t: 20, b: 60 };
+    const svg = criarSvg("graficoTrajetorias", W, H);
+    const maxS = 22;
+    const x = escala(0, maxS, m.l, W - m.r), y = escala(0, 60, H - m.b, m.t);
+    for (let v = 0; v <= 60; v += 15) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    for (let s = 0; s <= maxS; s += 2) texto(svg, x(s), H - m.b + 32, s, { "text-anchor": "middle" });
+    texto(svg, m.l, m.t - 2, "itens restantes", { "font-size": 17 });
+    texto(svg, W - m.r, H - 6, "semanas", { "text-anchor": "end" });
+    const caminhos = R.trajetorias.map((c) => prepararTraco(el("path", {
+      d: linha(c.map((v, i) => [x(i), y(v)])), fill: "none", stroke: "var(--camiseta)", "stroke-width": 2.2, opacity: 0.32,
+    }, svg)));
+    // Pontos de chegada empilhados no eixo x (mini histograma)
+    const pilha = {};
+    const pontos = R.trajetorias.map((c) => {
+      const s = c.length - 1; pilha[s] = (pilha[s] ?? 0) + 1;
+      return el("circle", { cx: x(s), cy: y(0) - 4 - (pilha[s] - 1) * 11, r: 5, fill: "var(--cyan)" }, svg);
+    });
+    return () => {
+      desenhar(caminhos, { duration: 1.4, delay: M ? M.stagger(0.045) : 0, ease: "linear" });
+      surgir(pontos, { delay: M ? M.stagger(0.045, { startDelay: 1.3 }) : 0, duration: 0.3 });
+    };
+  };
+
+  graficos.histograma = () => {
+    const W = 900, H = 560, m = { l: 60, r: 20, t: 30, b: 60 };
+    const svg = criarSvg("graficoHistograma", W, H);
+    const semanas = Object.keys(R.histograma).map(Number).sort((a, b) => a - b);
+    const max = Math.max(...Object.values(R.histograma));
+    const x = escala(semanas[0] - 0.5, semanas.at(-1) + 0.5, m.l, W - m.r), y = escala(0, max * 1.12, H - m.b, m.t);
+    const bw = (W - m.l - m.r) / semanas.length;
+    const cor = (s) => s <= R.cenarioA.p50 ? "var(--camiseta)" : s <= R.cenarioA.p85 ? "var(--cyan)" : s <= R.cenarioA.p95 ? "var(--acai)" : "#d6d3d1";
+    const barras = semanas.map((s) => el("rect", { x: x(s) - bw / 2 + 4, y: y(R.histograma[s]), width: bw - 8, height: y(0) - y(R.histograma[s]), rx: 5, fill: cor(s) }, svg));
+    semanas.forEach((s) => texto(svg, x(s), H - m.b + 32, s, { "text-anchor": "middle" }));
+    texto(svg, W - m.r, H - 6, "semanas para entregar 60 itens", { "text-anchor": "end" });
+    const marcas = [["P50", R.cenarioA.p50, "var(--camiseta)"], ["P85", R.cenarioA.p85, "var(--cyan)"], ["P95", R.cenarioA.p95, "var(--acai)"]].map(([n, s, c], i) => {
+      const g = el("g", {}, svg);
+      el("line", { x1: x(s) + bw / 2, x2: x(s) + bw / 2, y1: m.t + 30 + i * 40, y2: y(0), stroke: c, "stroke-width": 3, "stroke-dasharray": "8 7" }, g);
+      texto(g, x(s) + bw / 2 + 10, m.t + 50 + i * 40, n, { class: "rotulo-g", style: `fill:${c}` });
+      return g;
+    });
+    return () => { crescer(barras, { delay: M ? M.stagger(0.05) : 0 }); surgir(marcas, { delay: M ? M.stagger(0.25, { startDelay: 1 }) : 0 }); };
+  };
+
+  graficos.curvaS = () => {
+    const W = 900, H = 560, m = { l: 70, r: 20, t: 20, b: 60 };
+    const svg = criarSvg("graficoCurvaS", W, H);
+    const c = R.curvaS;
+    const x = escala(c[0].semana, c.at(-1).semana, m.l, W - m.r), y = escala(0, 1, H - m.b, m.t);
+    for (let v = 0; v <= 1.001; v += 0.25) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, `${Math.round(v * 100)}%`, { "text-anchor": "end" }); }
+    c.filter((p) => p.semana % 2 === 0).forEach((p) => texto(svg, x(p.semana), H - m.b + 32, p.semana, { "text-anchor": "middle" }));
+    const y85 = y(0.85);
+    const ref = el("line", { x1: m.l, x2: W - m.r, y1: y85, y2: y85, stroke: "var(--cyan)", "stroke-width": 3, "stroke-dasharray": "10 8" }, svg);
+    const pa = prepararTraco(el("path", { d: linha(c.map((p) => [x(p.semana), y(p.a)])), fill: "none", stroke: "var(--camiseta)", "stroke-width": 6, "stroke-linejoin": "round" }, svg));
+    const pb = prepararTraco(el("path", { d: linha(c.map((p) => [x(p.semana), y(p.b)])), fill: "none", stroke: "var(--acai)", "stroke-width": 6, "stroke-linejoin": "round" }, svg));
+    const marcas = [[R.cenarioA.p85, "var(--camiseta)"], [R.cenarioB.p85, "var(--acai)"]].map(([s, cor]) => {
+      const g = el("g", {}, svg);
+      el("line", { x1: x(s), x2: x(s), y1: y85, y2: y(0), stroke: cor, "stroke-width": 2.5, "stroke-dasharray": "6 6" }, g);
+      el("circle", { cx: x(s), cy: y85, r: 10, fill: cor }, g);
+      texto(g, x(s), y85 - 22, `${s} sem`, { "text-anchor": "middle", class: "rotulo-g", style: `fill:${cor}` });
+      return g;
+    });
+    return () => { surgir([ref]); desenhar([pa], { delay: 0.2 }); desenhar([pb], { delay: 0.9 }); surgir(marcas, { delay: M ? M.stagger(0.5, { startDelay: 1.8 }) : 0 }); };
+  };
+
+  graficos.dkw = () => {
+    const W = 1150, H = 330, m = { l: 210, r: 120, t: 10, b: 10 };
+    const svg = criarSvg("graficoDKW", W, H);
+    const ns = [100, 1000, 10000, 100000];
+    const eps = (n) => Math.sqrt(Math.log(2 / 0.05) / (2 * n));
+    const x = escala(0, eps(100), m.l, W - m.r);
+    const hb = (H - m.t - m.b) / ns.length;
+    const itens = ns.map((n, i) => {
+      const yy = m.t + i * hb + 12, e = eps(n), destaque = n === 10000;
+      texto(svg, m.l - 20, yy + hb / 2 - 2, `N = ${fmt(n)}`, { "text-anchor": "end", style: `font-size: 24px; fill: ${destaque ? "var(--ink)" : "var(--muted)"}; font-weight: 800` });
+      const r = el("rect", { x: m.l, y: yy, width: Math.max(4, x(e) - m.l), height: hb - 26, rx: 8, fill: destaque ? "var(--cyan)" : "#d6d3d1" }, svg);
+      const t = texto(svg, x(e) + 14, yy + hb / 2 - 2, `± ${fmt(e * 100, 2)} pp`, { class: "rotulo-g", style: `fill: ${destaque ? "var(--cyan-dark)" : "var(--muted)"}` });
+      return [r, t];
+    });
+    const barras = itens.map((i) => i[0]);
+    return () => {
+      if (M && !reduzido) {
+        barras.forEach((r) => { r.style.transformBox = "fill-box"; r.style.transformOrigin = "0 50%"; });
+        M.animate(barras, { transform: ["scaleX(0)", "scaleX(1)"] }, { duration: 0.8, ease: SAIDA, delay: M.stagger(0.18) });
+      }
+      surgir(itens.map((i) => i[1]), { delay: M ? M.stagger(0.18, { startDelay: 0.6 }) : 0 });
+    };
+  };
+
+  graficos.backtest = () => {
+    const W = 1050, H = 520, m = { l: 70, r: 20, t: 20, b: 60 };
+    const svg = criarSvg("graficoBacktest", W, H);
+    const bt = R.nest.backtest;
+    const j = bt.janelas.filter((w) => w.semana + bt.horizonte - 1 < bt.semanaRegime);
+    const xs = j.map((w) => w.semana);
+    const vals = j.flatMap((w) => [w.real, w.compromisso85, w.ingenuo]);
+    const x = escala(xs[0], xs.at(-1), m.l, W - m.r), y = escala(0, Math.max(...vals) * 1.1, H - m.b, m.t);
+    for (let v = 0; v <= 50; v += 10) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    xs.forEach((s) => texto(svg, x(s), H - m.b + 32, s, { "text-anchor": "middle" }));
+    texto(svg, W - m.r, H - 6, "semana inicial da previsão", { "text-anchor": "end" });
+    const serie = (k, cor, larg, tracejado) => prepararTraco(el("path", { d: linha(j.map((w) => [x(w.semana), y(w[k])])), fill: "none", stroke: cor, "stroke-width": larg, "stroke-linejoin": "round", ...(tracejado ? {} : {}) }, svg));
+    const pIng = serie("ingenuo", "var(--acai)", 4);
+    const p85 = serie("compromisso85", "var(--cyan)", 5);
+    const pReal = serie("real", "var(--ink)", 5);
+    const pts = j.map((w) => el("circle", { cx: x(w.semana), cy: y(w.real), r: 8, fill: w.real >= w.compromisso85 ? "var(--ink)" : "var(--alerta)", stroke: "#fff", "stroke-width": 3 }, svg));
+    return () => { desenhar([pReal]); desenhar([p85], { delay: 0.5 }); desenhar([pIng], { delay: 1 }); surgir(pts, { delay: M ? M.stagger(0.06, { startDelay: 1.2 }) : 0 }); };
+  };
+
+  graficos.regime = () => {
+    const W = 1200, H = 400, m = { l: 50, r: 10, t: 20, b: 50 };
+    const svg = criarSvg("graficoRegime", W, H);
+    const s = R.nest.semanal, reg = R.nest.backtest.semanaRegime;
+    const x = escala(0, s.length, m.l, W - m.r), y = escala(0, 60, H - m.b, m.t);
+    for (let v = 0; v <= 60; v += 20) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grade" }, svg); texto(svg, m.l - 14, y(v) + 6, v, { "text-anchor": "end" }); }
+    const bw = (W - m.l - m.r) / s.length;
+    const barras = s.map((v, i) => el("rect", { x: x(i) + 2, y: y(v), width: bw - 4, height: Math.max(0, y(0) - y(v)), rx: 3, fill: i + 1 >= reg ? "var(--acai)" : "var(--camiseta)" }, svg));
+    const corte = el("line", { x1: x(reg - 1) - 1, x2: x(reg - 1) - 1, y1: m.t, y2: y(0), stroke: "var(--cyan)", "stroke-width": 4, "stroke-dasharray": "10 8" }, svg);
+    const rot = texto(svg, x(reg - 1) - 16, m.t + 24, "semana 44: novo regime", { "text-anchor": "end", class: "rotulo-g", style: "fill: var(--cyan-dark)" });
+    texto(svg, m.l, H - 12, "PRs humanos mergeados por semana no nestjs/nest (sem Renovate e Dependabot)", {});
+    return () => { crescer(barras, { delay: M ? M.stagger(0.018) : 0 }); surgir([corte, rot], { delay: 1.1 }); };
+  };
+
+  // ---------------------------------------------------------------------
+  // Efeitos que não são gráficos
+  // ---------------------------------------------------------------------
+  const efeitos = {};
+
+  efeitos.contadores = () => {};
+
+  efeitos.corrente = () => {
+    const box = document.getElementById("corrente");
+    box.innerHTML = "";
+    const elos = Array.from({ length: 10 }, () => { const d = document.createElement("div"); d.className = "elo"; d.textContent = "75%"; box.appendChild(d); return d; });
+    const prob = document.getElementById("probCorrente");
+    prob.textContent = "5,6%";
+    return () => {
+      if (!M || reduzido) return;
+      elos.forEach((e) => { e.style.background = "var(--branco)"; e.style.color = "var(--ink)"; });
+      M.animate(elos, { transform: ["scale(.6)", "scale(1)"], opacity: [0, 1] }, { duration: 0.4, delay: M.stagger(0.08), ease: SAIDA });
+      M.animate(0, 10, {
+        duration: 3, delay: 0.9, ease: "linear",
+        onUpdate: (v) => {
+          const k = Math.floor(v);
+          prob.textContent = `${fmt(Math.pow(0.75, Math.max(1, k)) * 100, 1)}%`;
+          elos.forEach((e, i) => { if (i < k) { e.style.background = "var(--ink)"; e.style.color = "var(--branco)"; } });
+        },
+      });
+    };
+  };
+
+  efeitos.pi = () => {
+    const cv = document.getElementById("canvasPi"), ctx = cv.getContext("2d");
+    const S = cv.width, TOTAL = 6000;
+    const est = document.getElementById("piEstimado"), cont = document.getElementById("piPontos");
+    // gerador com semente, igual ao motor TS
+    let a = 2026;
+    const rng = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const pontos = Array.from({ length: TOTAL }, () => [rng(), rng()]);
+    function moldura() {
+      ctx.clearRect(0, 0, S, S);
+      ctx.strokeStyle = "#1c1917"; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(0, S, S, -Math.PI / 2, 0); ctx.stroke();
+    }
+    function ate(n) {
+      moldura();
+      let dentro = 0;
+      for (let i = 0; i < n; i++) {
+        const [px, py] = pontos[i], d = px * px + py * py <= 1;
+        if (d) dentro++;
+        ctx.fillStyle = d ? "rgba(18,167,196,.75)" : "rgba(74,29,92,.45)";
+        ctx.beginPath(); ctx.arc(px * S, S - py * S, 6, 0, 7); ctx.fill();
+      }
+      est.textContent = n ? fmt((4 * dentro) / n, 4) : "0";
+      cont.textContent = fmt(n);
+    }
+    ate(TOTAL);
+    let raf = 0;
+    return () => {
+      cancelAnimationFrame(raf);
+      if (reduzido) return ate(TOTAL);
+      const t0 = performance.now(), dur = 4500;
+      const passo = (t) => {
+        const p = Math.min(1, (t - t0) / dur);
+        ate(Math.max(1, Math.round(TOTAL * p * p)));
+        if (p < 1) raf = requestAnimationFrame(passo);
+      };
+      raf = requestAnimationFrame(passo);
+    };
+  };
+
+  efeitos.codigo = () => {
+    // "Depurador": executa a 1ª iteração real do motor (mesma semente 42) linha a linha
+    const slide = document.querySelector('[data-fx="codigo"]');
+    const linhas = [...document.querySelectorAll("#codigoMC .ln")];
+    const $ = (id) => document.getElementById(id);
+    const hist = R.historico, BACKLOG = 60;
+    const chips = hist.map((v) => { const c = document.createElement("span"); c.textContent = v; $("dbgChips").appendChild(c); return c; });
+
+    let a = 42; // Mulberry32, idêntico a criarRng(42) em src/monte-carlo.ts
+    const rng0 = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    // Pré-calcula as 10.000 iterações com o passo a passo das primeiras
+    const passos = [], resultados = [];
+    for (let r = 0; r < 10000; r++) {
+      let restante = BACKLOG, semanas = 0;
+      while (restante > 0) {
+        semanas++;
+        const i = Math.floor(rng0() * hist.length);
+        restante -= hist[i];
+        if (r < 6) passos.push({ r, semanas, i, sorteado: hist[i], restante });
+      }
+      resultados.push(semanas);
+    }
+    const ord = [...resultados].sort((x, y) => x - y);
+    const pct = (p) => { const pos = (p / 100) * (ord.length - 1), lo = Math.floor(pos); return Math.ceil(ord[lo] + (ord[Math.ceil(pos)] - ord[lo]) * (pos - lo)); };
+    const final = { p50: pct(50), p85: pct(85), p95: pct(95) };
+
+    const marcar = (...ns) => { linhas.forEach((l) => l.classList.remove("on")); ns.forEach((n) => linhas[n]?.classList.add("on")); };
+    const piscar = (id) => { const v = $(id).parentElement; v.classList.remove("flash"); void v.offsetWidth; v.classList.add("flash"); setTimeout(() => v.classList.remove("flash"), 260); };
+    const setVar = (id, val, flash = true) => { $(id).textContent = val; if (flash) piscar(id); };
+    const lista = (n) => `[${resultados.slice(0, n).join(", ")}${n > 0 ? ", " : ""}…]`;
+    const barra = (rest) => { $("dbgBarra").style.width = `${Math.max(0, rest) / BACKLOG * 100}%`; };
+
+    function estadoFinal() {
+      marcar(); chips.forEach((c) => c.classList.remove("on"));
+      setVar("dbgR", fmt(10000), false); setVar("dbgSemanas", resultados.at(-1), false);
+      setVar("dbgSorteado", "—", false); setVar("dbgRestante", "≤ 0", false); $("dbgOrigem").textContent = "do histórico";
+      barra(0); $("dbgResultados").textContent = `[${resultados.slice(0, 8).join(", ")}, …] (10.000)`;
+      $("dbgFinal").innerHTML = `P50 <b>${final.p50}</b> · P85 <b>${final.p85}</b> · P95 <b>${final.p95}</b>`;
+      $("dbgEstado").textContent = "concluído";
+    }
+    estadoFinal();
+
+    let geracao = 0;
+    return () => {
+      const minha = ++geracao;
+      if (reduzido) return estadoFinal();
+      const vivo = () => minha === geracao && slide.classList.contains("is-active");
+      const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
+      (async () => {
+        $("dbgFinal").innerHTML = "P50 <b>?</b> · P85 <b>?</b> · P95 <b>?</b>";
+        $("dbgResultados").textContent = "[…]";
+        $("dbgEstado").textContent = "executando";
+        await espera(900);
+        let rAtual = -1;
+        for (const p of passos) {
+          if (!vivo()) return;
+          const lento = p.r === 0, t = lento ? 1 : 0.22;
+          if (p.r !== rAtual) {
+            // nova iteração: linhas do for e do let
+            rAtual = p.r;
+            if (p.r > 0) { marcar(9); $("dbgResultados").textContent = lista(p.r); piscar("dbgResultados"); await espera(500 * t + 120); }
+            marcar(3); setVar("dbgR", p.r); await espera(380 * t);
+            marcar(4); setVar("dbgRestante", BACKLOG); setVar("dbgSemanas", 0); barra(BACKLOG); await espera(380 * t);
+          }
+          marcar(5, 6); setVar("dbgSemanas", p.semanas); await espera(300 * t);
+          chips.forEach((c) => c.classList.remove("on")); chips[p.i].classList.add("on");
+          marcar(7); setVar("dbgSorteado", p.sorteado); $("dbgOrigem").textContent = `semana ${p.i + 1} do histórico`;
+          setVar("dbgRestante", p.restante); barra(p.restante);
+          await espera(520 * t);
+        }
+        if (!vivo()) return;
+        marcar(9); $("dbgResultados").textContent = lista(6); await espera(500);
+        // acelera até 10.000 iterações
+        marcar(3, 9); $("dbgEstado").textContent = "acelerando";
+        chips.forEach((c) => c.classList.remove("on"));
+        for (let k = 6; k <= 10000; k = Math.ceil(k * 1.35)) {
+          if (!vivo()) return;
+          $("dbgR").textContent = fmt(k);
+          $("dbgResultados").textContent = `[${resultados.slice(0, 8).join(", ")}, …] (${fmt(k)})`;
+          await espera(70);
+        }
+        if (!vivo()) return;
+        marcar(11);
+        estadoFinal(); marcar(11);
+        if (M) M.animate("#dbgFinal b", { transform: ["scale(1.6)", "scale(1)"], color: ["#fcd34d", "#12a7c4"] }, { duration: 0.6, delay: M.stagger(0.15) });
+      })();
+    };
+  };
+
+  efeitos.formula = () => () => {};
+
+  // Registra os efeitos de cada slide (gráficos já ficam desenhados para o PDF)
+  const animadores = slides.map((s) => {
+    const fx = s.dataset.fx;
+    const criar = graficos[fx] ?? efeitos[fx];
+    return criar ? criar() : null;
+  });
+
+  // ---------------------------------------------------------------------
+  // Contadores numéricos (data-count)
+  // ---------------------------------------------------------------------
+  function contar(slide) {
+    slide.querySelectorAll("[data-count]").forEach((e) => {
+      const alvo = parseFloat(e.dataset.count), dec = parseInt(e.dataset.dec ?? "0", 10);
+      e.textContent = fmt(alvo, dec);
+      if (!M || reduzido) return;
+      M.animate(0, alvo, { duration: 1.4, delay: 0.5, ease: SAIDA, onUpdate: (v) => { e.textContent = fmt(v, dec); } });
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Entrada do slide com Motion
+  // ---------------------------------------------------------------------
+  function entrar(i) {
+    const s = slides[i];
+    contar(s);
+    if (M && !reduzido) {
+      const titulo = s.querySelector(".titulo"), ressalva = s.querySelector(".ressalva");
+      M.animate(titulo, { opacity: [0, 1], transform: ["translateY(28px)", "translateY(0)"], filter: ["blur(8px)", "blur(0px)"] }, { duration: 0.7, ease: SAIDA });
+      if (ressalva) M.animate(ressalva, { opacity: [0, 1], transform: ["translateX(-24px)", "translateX(0)"] }, { duration: 0.6, delay: 0.3, ease: SAIDA });
+      const itens = s.querySelectorAll("[data-anim]");
+      if (itens.length) M.animate(itens, { opacity: [0, 1], transform: ["translateY(22px)", "translateY(0)"] }, { duration: 0.55, ease: SAIDA, delay: M.stagger(0.09, { startDelay: 0.45 }) });
+      const av = s.querySelector(".avatar");
+      if (av) M.animate(av, { opacity: [0, 1], transform: ["translateY(90px) rotate(-6deg)", "translateY(0) rotate(0deg)"] }, { type: "spring", bounce: 0.35, duration: 0.9, delay: 0.25 });
+      const ass = s.querySelector(".assinatura");
+      if (ass) M.animate(ass, { opacity: [0, 1] }, { duration: 0.6, delay: 0.6 });
+    }
+    animadores[i]?.();
+  }
+
+  // ---------------------------------------------------------------------
+  // Navegação
+  // ---------------------------------------------------------------------
+  const deck = document.getElementById("deck");
+  const contador = document.getElementById("contador");
+  const progresso = document.getElementById("progresso");
+  let atual = 0;
+
+  function ajustar() {
+    const barra = document.body.classList.contains("cheia") ? 0 : 56;
+    const k = Math.min(innerWidth / 1920, (innerHeight - barra) / 1080);
+    deck.style.transform = `translate(-50%, -50%) scale(${k})`;
+  }
+
+  // Tela cheia (F, botão ou F11): esconde a interface e o cursor parado
+  let cursorTimer = 0;
+  function atualizarTelaCheia() {
+    const cheia = !!document.fullscreenElement || (innerHeight === screen.height && innerWidth === screen.width);
+    document.body.classList.toggle("cheia", cheia);
+    if (!cheia) document.body.classList.remove("cursor-oculto");
+    ajustar();
+  }
+  document.addEventListener("fullscreenchange", atualizarTelaCheia);
+  addEventListener("resize", atualizarTelaCheia);
+  addEventListener("mousemove", () => {
+    document.body.classList.remove("cursor-oculto");
+    clearTimeout(cursorTimer);
+    if (document.body.classList.contains("cheia")) cursorTimer = setTimeout(() => document.body.classList.add("cursor-oculto"), 2000);
+  });
+  // Clique no slide avança (útil em tela cheia, sem botões)
+  document.getElementById("deck").addEventListener("click", () => mostrar(atual + 1));
+  function mostrar(i) {
+    atual = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, k) => s.classList.toggle("is-active", k === atual));
+    contador.textContent = `${atual + 1} / ${slides.length}`;
+    progresso.style.width = `${((atual + 1) / slides.length) * 100}%`;
+    history.replaceState(null, "", `#${atual + 1}`);
+    entrar(atual);
+  }
+  const telaCheia = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
+
+  addEventListener("resize", ajustar);
+  addEventListener("hashchange", () => {
+    const n = parseInt(location.hash.slice(1), 10);
+    if (Number.isFinite(n) && n - 1 !== atual) mostrar(n - 1);
+  });
+  addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); mostrar(atual + 1); }
+    else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); mostrar(atual - 1); }
+    else if (e.key === "Home") mostrar(0);
+    else if (e.key === "End") mostrar(slides.length - 1);
+    else if (e.key.toLowerCase() === "r") entrar(atual);
+    else if (e.key.toLowerCase() === "f") telaCheia();
+    else if (e.key.toLowerCase() === "p") print();
+  });
+  document.getElementById("btnProximo").onclick = () => mostrar(atual + 1);
+  document.getElementById("btnAnterior").onclick = () => mostrar(atual - 1);
+  document.getElementById("btnRepetir").onclick = () => entrar(atual);
+  document.getElementById("btnTela").onclick = telaCheia;
+
+  ajustar();
+  const inicial = parseInt(location.hash.slice(1), 10);
+  mostrar(Number.isFinite(inicial) ? inicial - 1 : 0);
+})();
+</script>
+</body>
+</html>

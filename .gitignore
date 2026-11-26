@@ -6,3 +6,6 @@ __pycache__/
 Thumbs.db
 node_modules/
 build/
+
+# roteiro pessoal da apresentação (não publicar)
+roteiro_apresentacao.pdf
